@@ -1,11 +1,23 @@
-[Mon Jul 30 19:56:34 2018] logs moved in here
-[Mon Jul 30 19:56:34 2018] created storage STORAGE1 in /path/to/mountpoint1 with hotswap 127.0.0.1:11111
-[Mon Jul 30 19:56:34 2018] old NULL
-[Mon Jul 30 19:56:34 2018] new /path/to/mountpoint1
-[Mon Jul 30 19:56:34 2018] parse_storage: diskname - STORAGE1
-[Mon Jul 30 19:56:34 2018] parse_storage: mountpoint - /path/to/mountpoint1
-[Mon Jul 30 19:56:34 2018] parse_storage: raid - 1
-[Mon Jul 30 19:56:34 2018] parse_storage: hotswap - 127.0.0.1:11111
-[Mon Jul 30 19:56:34 2018] parse_storage: server - 127.0.0.1:10001
-[Mon Jul 30 19:56:34 2018] parse_storage: server - 127.0.0.1:10002
-[Mon Jul 30 19:56:34 2018] created storage STORAGE2 in /path/to/mountpoint2 with hotswap 127.0.0.1:22222
+[Mon Jul 30 20:48:43 2018] logs moved in here
+[Mon Jul 30 20:48:43 2018] created storage STORAGE1 in /path/to/mountpoint1 with hotswap 127.0.0.1:11111
+[Mon Jul 30 20:48:43 2018] parse_storage: diskname - STORAGE1
+[Mon Jul 30 20:48:43 2018] parse_storage: mountpoint - /path/to/mountpoint1
+[Mon Jul 30 20:48:43 2018] parse_storage: raid - 1
+[Mon Jul 30 20:48:43 2018] parse_storage: hotswap - 127.0.0.1:11111
+[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10001
+[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10002
+[Mon Jul 30 20:48:43 2018] created storage STORAGE2 in /path/to/mountpoint2 with hotswap 127.0.0.1:22222
+[Mon Jul 30 20:48:43 2018] parse_storage: diskname - STORAGE2
+[Mon Jul 30 20:48:43 2018] parse_storage: mountpoint - /path/to/mountpoint2
+[Mon Jul 30 20:48:43 2018] parse_storage: raid - 5
+[Mon Jul 30 20:48:43 2018] parse_storage: hotswap - 127.0.0.1:22222
+[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10011
+[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10012
+[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10013
+[Mon Jul 30 20:48:43 2018] vaaax /path/to/mountpoint2
+[Mon Jul 30 20:48:43 2018] 0 2
+[Mon Jul 30 20:48:43 2018] mounting /path/to/mountpoint1
+[Mon Jul 30 20:48:43 2018] forked 0 2
+[Mon Jul 30 20:48:43 2018] 1 2
+[Mon Jul 30 20:48:43 2018] forked 1 2
+[Mon Jul 30 20:48:43 2018] mounting /path/to/mountpoint2

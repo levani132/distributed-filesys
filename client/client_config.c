@@ -9,8 +9,12 @@
 
 int n_storages(FILE * file){
     int count = 0;
-    char file_content[4096];
-    fscanf(file, "%[^EOF]", file_content);
+    fseek(file, 0, SEEK_END);
+    long fsize = ftell(file);
+    rewind(file);
+    char *file_content = malloc(fsize + 1);
+    fread(file_content, fsize, 1, file);
+    rewind(file);
     const char *tmp = file_content;
     while((tmp = strstr(tmp, "diskname =")))
     {
@@ -43,9 +47,7 @@ int parse_storage(struct storage * storage, FILE * file){
     if(fscanf(file, " diskname = %s mountpoint = %s raid = %d servers = %[^\n] hotswap = %s",
             diskname_tmp, mountpoint_tmp, &storage->raid, servers_tmp, hotswap_tmp) != EOF){
         logger(NULL, NULL, "created storage %s in %s with hotswap %s", diskname_tmp, mountpoint_tmp, hotswap_tmp);
-        logger(NULL, NULL, "old %s",storage->mountpoint ? storage->mountpoint : "NULL");
         storage->mountpoint = strdup(mountpoint_tmp);
-        logger(NULL, NULL, "new %s",storage->mountpoint );
         storage->diskname = strdup(diskname_tmp);
         storage->hotswap = strdup(hotswap_tmp);
         logger(NULL, NULL, "parse_storage: diskname - %s", storage->diskname);
@@ -72,14 +74,10 @@ int parse_storage(struct storage * storage, FILE * file){
 void config_init(struct config * config, char * filename){
     assert(config != NULL);
     assert(filename != NULL);
-    logger(NULL, NULL, "%X", config->storages);
-    logger(NULL, NULL, "%X", (int)(config->storages + 1));
-    logger(NULL, NULL, "%d", sizeof(struct storage));
     logger(NULL, NULL, "config is initializing");
     FILE* file = fopen(filename, "r");
     config->n_storages = n_storages(file);
     logger(NULL, NULL, "config->n_storages: %d", config->n_storages);
-    rewind(file);
     parse_config(config, file);
     config->storages = malloc(config->n_storages * sizeof(struct storage));
     memset(config->storages, 0, sizeof * config->storages);

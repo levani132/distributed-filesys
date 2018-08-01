@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -28,6 +29,26 @@ void logger(const char * storage_name, const char * server_addr, const char * fm
     if(server_addr != NULL){
         fprintf(file ? file : stdout, (file ? "%s " : "\x1B[36m%s\x1B[0m "), server_addr);
     }
+    vfprintf(file ? file : stdout, fmt, ar);
+    fprintf(file ? file : stdout, "\n");
+    fflush(file ? file : stdout);
+}
+
+void loggerf(const char * fmt, ...){
+    va_list ar;
+    va_start(ar, fmt);
+    if(debug){
+        printf("[\x1B[34mDEBUG\x1B[0m] ");
+        vprintf(fmt, ar);
+        printf("\n");
+        va_start(ar, fmt);
+    }
+    time_t current_time;
+    char* c_time_string;
+    current_time = time(NULL);
+    c_time_string = ctime(&current_time);
+	c_time_string[strlen(c_time_string) - 1] = '\0';
+    fprintf(file ? file : stdout, (file ? "[%s] " : "[\x1B[35m%s\x1B[0m] "), c_time_string);
     vfprintf(file ? file : stdout, fmt, ar);
     fprintf(file ? file : stdout, "\n");
     fflush(file ? file : stdout);

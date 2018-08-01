@@ -1,23 +1,240 @@
-[Mon Jul 30 20:48:43 2018] logs moved in here
-[Mon Jul 30 20:48:43 2018] created storage STORAGE1 in /path/to/mountpoint1 with hotswap 127.0.0.1:11111
-[Mon Jul 30 20:48:43 2018] parse_storage: diskname - STORAGE1
-[Mon Jul 30 20:48:43 2018] parse_storage: mountpoint - /path/to/mountpoint1
-[Mon Jul 30 20:48:43 2018] parse_storage: raid - 1
-[Mon Jul 30 20:48:43 2018] parse_storage: hotswap - 127.0.0.1:11111
-[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10001
-[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10002
-[Mon Jul 30 20:48:43 2018] created storage STORAGE2 in /path/to/mountpoint2 with hotswap 127.0.0.1:22222
-[Mon Jul 30 20:48:43 2018] parse_storage: diskname - STORAGE2
-[Mon Jul 30 20:48:43 2018] parse_storage: mountpoint - /path/to/mountpoint2
-[Mon Jul 30 20:48:43 2018] parse_storage: raid - 5
-[Mon Jul 30 20:48:43 2018] parse_storage: hotswap - 127.0.0.1:22222
-[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10011
-[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10012
-[Mon Jul 30 20:48:43 2018] parse_storage: server - 127.0.0.1:10013
-[Mon Jul 30 20:48:43 2018] vaaax /path/to/mountpoint2
-[Mon Jul 30 20:48:43 2018] 0 2
-[Mon Jul 30 20:48:43 2018] mounting /path/to/mountpoint1
-[Mon Jul 30 20:48:43 2018] forked 0 2
-[Mon Jul 30 20:48:43 2018] 1 2
-[Mon Jul 30 20:48:43 2018] forked 1 2
-[Mon Jul 30 20:48:43 2018] mounting /path/to/mountpoint2
+[Wed Aug  1 20:45:07 2018] ------------- LOGS -----------------
+[Wed Aug  1 20:45:07 2018] parse_config: cache_size - 1024
+[Wed Aug  1 20:45:07 2018] parse_config: cache_replacement - rlu
+[Wed Aug  1 20:45:07 2018] parse_config: timeout - 10
+[Wed Aug  1 20:45:07 2018] config->n_storages: 1
+[Wed Aug  1 20:45:07 2018] parse_storage: diskname - STORAGE1
+[Wed Aug  1 20:45:07 2018] parse_storage: mountpoint - test0
+[Wed Aug  1 20:45:07 2018] parse_storage: raid - 1
+[Wed Aug  1 20:45:07 2018] parse_storage: hotswap - 127.0.0.1:11111
+[Wed Aug  1 20:45:07 2018] parse_storage: server - 127.0.0.1:10001
+[Wed Aug  1 20:45:07 2018] parse_storage: server - 127.0.0.1:10003
+[Wed Aug  1 20:45:07 2018] mounting test0
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_opendir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_readdir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_releasedir] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:07 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:10 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:10 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:13 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:13 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:13 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:13 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:16 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:16 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:19 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:19 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:21 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:21 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:24 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:24 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:24 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:24 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector
+[Wed Aug  1 20:45:26 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector
+[Wed Aug  1 20:45:26 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector

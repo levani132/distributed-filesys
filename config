@@ -4,13 +4,7 @@ cache_replacment = rlu
 timeout = 10
 
 diskname = STORAGE1
-mountpoint = /path/to/mountpoint1
+mountpoint = test0
 raid = 1
-servers = 127.0.0.1:10001, 127.0.0.1:10002
+servers = 127.0.0.1:10001, 127.0.0.1:10003
 hotswap = 127.0.0.1:11111 
-
-diskname = STORAGE2
-mountpoint = /path/to/mountpoint2
-raid = 5
-servers = 127.0.0.1:10011, 127.0.0.1:10012, 127.0.0.1:10013
-hotswap = 127.0.0.1:22222

@@ -4,10 +4,10 @@ build:
 	mkdir build
 
 client: client/client.c
-	gcc -Wall client/client.c client/client_config.c logger.c `pkg-config fuse --cflags --libs`  -o build/client
+	gcc -Wall logger.c message.c client/client.c client/client_config.c client/client_connector.c `pkg-config fuse --cflags --libs`  -o build/client
 
 server: server/server.c
-	gcc server/server.c -o build/server
+	gcc -Wall server/server.c server/server_connector.c logger.c message.c `pkg-config fuse --cflags --libs` -o build/server
 
 clean:
 	rm -fdr build

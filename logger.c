@@ -5,18 +5,11 @@
 #include <time.h>
 
 FILE * file = NULL;
-int debug = 0;
 
 
 void logger(const char * storage_name, const char * server_addr, const char * fmt, ...){
     va_list ar;
     va_start(ar, fmt);
-    if(debug){
-        printf("[\x1B[34mDEBUG\x1B[0m] ");
-        vprintf(fmt, ar);
-        printf("\n");
-        va_start(ar, fmt);
-    }
     time_t current_time;
     char* c_time_string;
     current_time = time(NULL);
@@ -37,12 +30,6 @@ void logger(const char * storage_name, const char * server_addr, const char * fm
 void loggerf(const char * fmt, ...){
     va_list ar;
     va_start(ar, fmt);
-    if(debug){
-        printf("[\x1B[34mDEBUG\x1B[0m] ");
-        vprintf(fmt, ar);
-        printf("\n");
-        va_start(ar, fmt);
-    }
     time_t current_time;
     char* c_time_string;
     current_time = time(NULL);

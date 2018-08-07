@@ -31,12 +31,7 @@ void parse_config(struct config * config, FILE * file){
             errorlog_tmp, &config->cache_size, cache_replacement_tmp, &config->timeout));
     config->errorlog = strdup(errorlog_tmp);
     config->cache_replacement = strdup(cache_replacement_tmp);
-    FILE* error_file = fopen(config->errorlog, "w");
-    assert(file != NULL);
     loggerf("parse_config: errorlog - %s", config->errorlog);
-    loggerf("from now on %s will be used for logs (see next messages there)", config->errorlog);
-    logger_set_file(error_file);
-    loggerf("------------- LOGS -----------------");
     loggerf("parse_config: cache_size - %d", config->cache_size);
     loggerf("parse_config: cache_replacement - %s", config->cache_replacement);
     loggerf("parse_config: timeout - %d", config->timeout);
@@ -77,6 +72,11 @@ void config_init(struct config * config, char * filename){
     FILE* file = fopen(filename, "r");
     config->n_storages = n_storages(file);
     parse_config(config, file);
+    FILE* error_file = fopen(config->errorlog, "w");
+    assert(file != NULL);
+    loggerf("from now on %s will be used for logs (see next messages there)", config->errorlog);
+    logger_set_file(error_file);
+    loggerf("------------- LOGS -----------------");
     config->storages = malloc(config->n_storages * sizeof(struct storage));
     memset(config->storages, 0, sizeof * config->storages);
     int i = 0;
@@ -97,5 +97,4 @@ void config_dest(struct config * config){
         }
         free(config->storages[i].servers);
     }
-
 }

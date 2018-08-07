@@ -1,3 +1,4 @@
+#pragma once
 #include <bits/types/FILE.h>
 
 void logger(const char * storage_name, const char * server_addr, const char * fmt, ...);

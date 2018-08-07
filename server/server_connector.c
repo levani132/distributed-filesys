@@ -82,5 +82,16 @@ int connector_send_data(int sock, void* data, int size){
         loggerf("something went wrong when sending data");
         return -errno;
     }
-    return n_sent;
+    return 0;
+}
+
+int connector_send_status(int sock, int status) {
+    int n_sent;
+    struct message* to_send = create_message(0, status, 0, "");
+    if((n_sent = connector_send_message(sock, to_send)) < 0){
+        free(to_send);
+        return n_sent;
+    }
+    free(to_send);
+    return 0;
 }

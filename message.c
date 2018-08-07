@@ -12,7 +12,14 @@ char* function_name[] = {
     "read",
     "write",
     "utime",
-    "truncate"
+    "truncate",
+    "release",
+    "releasedir",
+    "mknod",
+    "mkdir",
+    "rename",
+    "unlink",
+    "rmdir"
 };
 
 struct message* create_message(int function_id, long status, int wait_for_message, const char * small_data){
@@ -32,5 +39,12 @@ struct message* create_ext_message(int function_id, long status, int wait_for_me
     struct message* message = create_message(function_id, status, wait_for_message, small_data);
     message->size = size;
     message->offset = offset;
+    return message;
+}
+
+struct message* create_mk_message(int function_id, mode_t mode, dev_t dev, const char * small_data){
+    struct message* message = create_ext_message(function_id, 0, 0, 0, 0, small_data);
+    message->mode = mode;
+    message->dev = dev;
     return message;
 }

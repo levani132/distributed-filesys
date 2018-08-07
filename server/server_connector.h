@@ -1,5 +1,8 @@
+#pragma once
+
 int connector_open_server_on(const char * ip, int port);
 
+int connector_send_status(int sock, int status);
 int connector_send_message(int sock, struct message* message);
 int connector_send_data(int sock, void* data, int size);
 

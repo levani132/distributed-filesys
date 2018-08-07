@@ -10,15 +10,24 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <linux/limits.h>
+#include <signal.h>
 
 #include "../logger.h"
 #include "../models/getattr_ans.h"
 #include "../message.h"
 #include "server_connector.h"
 
+#define UNUSED __attribute__((unused))
+
 char ip[16];
 int port;
 char root_path[256];
+int listen_sock;
+
+void cleanup(UNUSED int sig){
+    loggerf("cleaning up");
+    close(listen_sock);
+}
 
 void get_fullpath(char* fullpath, const char* path){
     strcpy(fullpath, root_path);
@@ -76,9 +85,11 @@ char* server_readdir (intptr_t dp){
 
 struct getattr_ans* server_getattr(const char * path) {
     char fullpath[PATH_MAX];
-    struct getattr_ans* ans = malloc(sizeof(*ans));
+    struct getattr_ans* ans = malloc(sizeof*ans);
+    memset(ans, 0, sizeof*ans);
     get_fullpath(fullpath, path);
     ans->retval = lstat(fullpath, &ans->stat);
+    ans->retval = ans->retval < 0 ? -errno : ans->retval;
     return ans;
 }
 
@@ -88,103 +99,125 @@ char* server_read(int fd, size_t size, off_t offset){
     return buf;
 }
 
+int server_truncate(char* path, off_t size){
+    char fullpath[256];
+    get_fullpath(fullpath, path);
+    int res = truncate(fullpath, size);
+    return res < 0 ? -errno : res;
+}
+
+int server_utime(const char *__file, const struct utimbuf *__file_times){
+    char fullpath[256];
+    get_fullpath(fullpath, __file);
+    int res = utime(fullpath, __file_times);
+    return res < 0 ? -errno : res;
+}
+
+int server_mknod(const char *path, mode_t mode, dev_t dev){
+    char fullpath[PATH_MAX];
+    get_fullpath(fullpath, path);
+    int retval = open(fullpath, O_CREAT | O_EXCL | O_WRONLY, mode);
+    if (retval >= 0){
+        retval = close(retval);
+    }
+	if(retval < 0){
+        retval = -errno;
+    }
+    return retval;
+}
+
+int server_mkdir(const char *path, mode_t mode)
+{
+    char fullpath[PATH_MAX];
+    get_fullpath(fullpath, path);
+    if(mkdir(fullpath, mode) < 0)
+    	return -errno;
+    return 0;
+}
+
+int server_rename(const char *path, const char *newpath){
+    char fullpath[PATH_MAX];
+    char new_fullpath[PATH_MAX];
+    get_fullpath(fullpath, path);
+    get_fullpath(new_fullpath, newpath);
+    if(rename(fullpath, new_fullpath) < 0)
+    	return -errno;
+    return 0;
+}
+
+int server_unlink(const char *path){
+    char fullpath[PATH_MAX];
+    get_fullpath(fullpath, path);
+
+    int retval = unlink(fullpath);
+    if(retval < 0)
+    	retval = -errno;
+
+    return retval;
+}
+
+int server_rmdir(const char *path){
+    char fullpath[PATH_MAX];
+    get_fullpath(fullpath, path);
+
+    int retval = rmdir(fullpath);
+    if(retval < 0)
+    	retval = -errno;
+
+    return retval;
+}
+
 int handle_message(int sock, struct message* mr){
-    int n_sent;
+    int retval;
     loggerf("server is calling %s", function_name[mr->function_id]);
     if(mr->function_id == fnc_opendir){
-        struct message* res = create_message(0, server_opendir(mr->small_data), 0, "");
-        if((n_sent = connector_send_message(sock, res)) < 0){
-            free(res);
-            return n_sent;
-        }
-        free(res);
+        retval = connector_send_status(sock, server_opendir(mr->small_data));
+    }else if(mr->function_id == fnc_open){
+        retval = connector_send_status(sock, server_open(mr->small_data, mr->status));
+    }else if(mr->function_id == fnc_truncate){
+        retval = connector_send_status(sock, server_truncate(mr->small_data, mr->offset));
+    }else if(mr->function_id == fnc_release){
+        retval = connector_send_status(sock, close((int)mr->status));
+    }else if(mr->function_id == fnc_releasedir){
+        retval = connector_send_status(sock, closedir((DIR *)(uintptr_t)mr->status));
     }else if(mr->function_id == fnc_readdir){
         char * res = server_readdir(mr->status);
         int byte_count = ((int*)res)[((int*)res)[0]] + strlen(res + ((int*)res)[((int*)res)[0]]) + 1;
-        if((n_sent = connector_send_data(sock, res, byte_count)) < 0) {
-            free(res);
-            return n_sent;
-        }
+        retval = connector_send_data(sock, res, byte_count);
         free(res);
     }else if(mr->function_id == fnc_getattr){
         struct getattr_ans * res = server_getattr(mr->small_data);
-        if((n_sent = connector_send_data(sock, res, sizeof(struct getattr_ans))) < 0) {
-            free(res);
-            return n_sent;
-        }
-        free(res);
-    }else if(mr->function_id == fnc_open){
-        struct message* res = create_message(0, server_open(mr->small_data, mr->status), 0, "");
-        if((n_sent = connector_send_message(sock, res)) < 0){
-            free(res);
-            return n_sent;
-        }
+        retval = connector_send_data(sock, res, sizeof(struct getattr_ans));
         free(res);
     }else if(mr->function_id == fnc_read){
         char* res = server_read(mr->status, mr->size, mr->offset);
-        if((n_sent = connector_send_data(sock, res, mr->size + 1)) < 0){
-            free(res);
-            return n_sent;
-        }
+        retval = connector_send_data(sock, res, mr->size + 1);
         free(res);
     }else if(mr->function_id == fnc_write){
         char* data = connector_get_data(sock, mr->wait_for_message);
         int res = pwrite(mr->status, data, mr->size, mr->offset);
-        if(res < 0){
-            res = -errno;
-        }
         free(data);
-        struct message* to_send = create_ext_message(0, res, 0, 0, 0, "");
-        if((n_sent = connector_send_message(sock, to_send)) < 0){
-            free(to_send);
-            return n_sent;
-        }
-        free(to_send);
+        retval = connector_send_status(sock, res);
     }else if(mr->function_id == fnc_utime){
-        struct utimbuf* data = (struct utimbuf*)connector_get_data(sock, mr->wait_for_message);
-        char fullpath[256];
-        get_fullpath(fullpath, mr->small_data);
-        int res = utime(fullpath, data);
-        if(res < 0){
-            res = -errno;
-        }
-        struct message* to_send = create_message(0, res, 0, "");
-        if((n_sent = connector_send_message(sock, to_send)) < 0){
-            free(to_send);
-            return n_sent;
-        }
-        free(to_send);
-    }else if(mr->function_id == fnc_truncate){
-        char fullpath[256];
-        get_fullpath(fullpath, mr->small_data);
-        int res = truncate(fullpath, mr->offset);
-        if(res < 0){
-            res = -errno;
-        }
-        struct message* to_send = create_message(0, res, 0, "");
-        if((n_sent = connector_send_message(sock, to_send)) < 0){
-            free(to_send);
-            return n_sent;
-        }
-        free(to_send);
-    }else if(mr->function_id == fnc_release){
-        struct message* to_send = malloc(sizeof*to_send);
-        to_send->status = close(mr->status);
-        if((n_sent = connector_send_message(sock, to_send)) < 0){
-            free(to_send);
-            return n_sent;
-        }
-        free(to_send);
-    }else if(mr->function_id == fnc_releasedir){
-        struct message* to_send = malloc(sizeof*to_send);
-        to_send->status = closedir((DIR *)(uintptr_t)mr->status);
-        if((n_sent = connector_send_message(sock, to_send)) < 0){
-            free(to_send);
-            return n_sent;
-        }
-        free(to_send);
+        struct utimbuf* data = connector_get_data(sock, mr->wait_for_message);
+        int res = server_utime(mr->small_data, data);
+        free(data);
+        retval = connector_send_status(sock, res);
+    }else if(mr->function_id == fnc_mknod){
+        retval = connector_send_status(sock, server_mknod(mr->small_data, mr->mode, mr->dev));
+    }else if(mr->function_id == fnc_mkdir){
+        retval = connector_send_status(sock, server_mkdir(mr->small_data, mr->mode));
+    }else if(mr->function_id == fnc_rename){
+        char* data = connector_get_data(sock, mr->wait_for_message);
+        int res = server_rename(mr->small_data, data);
+        free(data);
+        retval = connector_send_status(sock, res);
+    }else if(mr->function_id == fnc_unlink){
+        retval = connector_send_status(sock, server_unlink(mr->small_data));
+    }else if(mr->function_id == fnc_rmdir){
+        retval = connector_send_status(sock, server_rmdir(mr->small_data));
     }
-    return 0;
+    return retval;
 }
 
 int main(int argc, char* argv[]) {
@@ -198,7 +231,8 @@ int main(int argc, char* argv[]) {
     strcpy(root_path, argv[3]);
     root_path[strlen(argv[3])] = '\0';
     
-    int listen_sock = connector_open_server_on(ip, port);
+    listen_sock = connector_open_server_on(ip, port);
+    signal(SIGINT, cleanup);
 	struct sockaddr_in client_address;
 	socklen_t client_address_len = 0;
 	while (1) {
@@ -223,7 +257,6 @@ int main(int argc, char* argv[]) {
 		close(sock);
         loggerf("sock closed");
 	}
-
 	close(listen_sock);
     return 0;
 }

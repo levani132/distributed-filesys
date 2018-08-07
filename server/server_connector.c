@@ -85,7 +85,7 @@ int connector_send_data(int sock, void* data, int size){
     return 0;
 }
 
-int connector_send_status(int sock, int status) {
+int connector_send_status(int sock, long status) {
     int n_sent;
     struct message* to_send = create_message(0, status, 0, "");
     if((n_sent = connector_send_message(sock, to_send)) < 0){

@@ -18,12 +18,12 @@
 
 struct config config;
 
-void log_start(int server, const char * fnc){
-    logger(STORAGE.diskname, STORAGE.servers[server], "starting [%s] from connector", fnc);
+void log_start(int i, const char * fnc){
+    LOGGER("starting [%s] from connector", fnc);
 }
 
-void log_end(int server, const char * fnc){
-    logger(STORAGE.diskname, STORAGE.servers[server], "ended    [%s] from connector", fnc);
+void log_end(int i, const char * fnc){
+    LOGGER("ended    [%s] from connector", fnc);
 }
 
 
@@ -155,13 +155,14 @@ int client_release(const char *path, struct fuse_file_info *fi)
 int client_opendir(const char *path, struct fuse_file_info *fi)
 {
     intptr_t dp;
-    log_start(0, "client_opendir");
+    int i = 0;
+    log_start(i, "client_opendir");
     struct message* message_to_send = create_message(fnc_opendir, 0, 0, path);
-    dp = send_and_recv_status(message_to_send, STORAGE.servers[0]);
-    log_end(0, "client_opendir");
+    dp = send_and_recv_status(message_to_send, STORAGE.servers[i]);
+    log_end(i, "client_opendir");
     fi->fh = dp;
     if(dp < 0){
-        loggerf("%s %d", strerror(-dp), -dp);
+        LOGGER_ERROR("%s %d", strerror(-dp), -dp);
         return -dp;
     }
     return 0;

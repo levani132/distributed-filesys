@@ -39,7 +39,9 @@ intptr_t server_opendir (const char * path){
     char fullpath[PATH_MAX];
     
     get_fullpath(fullpath, path);
+    loggerf("vaa %s", fullpath);
     dp = opendir(fullpath);
+    loggerf("vaa %ld", dp);
     if (dp == NULL){
 		dp = (DIR*)-(long)errno;
     }
@@ -219,19 +221,22 @@ int handle_message(int sock, struct message* mr){
     return retval;
 }
 
-int main(int argc, char* argv[]) {
-    if(argc < 4){
-        loggerf("specify at least three arguments");
-        return -1;
-    }
+int readargs(char* argv[]){
     strcpy(ip, argv[1]);
     ip[strlen(argv[1])] = '\0';
     sscanf(argv[2], "%d", &port);
     strcpy(root_path, argv[3]);
     root_path[strlen(argv[3])] = '\0';
-    
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
+    if(argc < 4){
+        loggerf("specify at least three arguments");
+        return -1;
+    }
+    readargs(argv);
     listen_sock = connector_open_server_on(ip, port);
-    signal(SIGINT, cleanup);
 	struct sockaddr_in client_address;
 	socklen_t client_address_len = 0;
 	while (1) {

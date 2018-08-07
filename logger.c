@@ -41,6 +41,21 @@ void loggerf(const char * fmt, ...){
     fflush(file ? file : stdout);
 }
 
+void logger_error(const char* filename, int line, const char * fmt, ...){
+    va_list ar;
+    va_start(ar, fmt);
+    time_t current_time;
+    char* c_time_string;
+    current_time = time(NULL);
+    c_time_string = ctime(&current_time);
+	c_time_string[strlen(c_time_string) - 1] = '\0';
+    fprintf(file ? file : stdout, (file ? "[%s] " : "[\x1B[35m%s\x1B[0m] "), c_time_string);
+    fprintf(file ? file : stdout, (file ? "%s:%d " : "\x1B[33m%s:%d\x1B[0m "), filename, line);
+    vfprintf(file ? file : stdout, fmt, ar);
+    fprintf(file ? file : stdout, "\n");
+    fflush(file ? file : stdout);
+}
+
 void logger_set_file(FILE * file_in){
     file = file_in;
 }

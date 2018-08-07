@@ -12,15 +12,6 @@
 #include "../logger.h"
 #include "../message.h"
 
-int index_of(const char * source, const char c){
-    const char* ptr = strchr(source, c);
-    int index = -1;
-    if(ptr) {
-        index = ptr - source;
-    }
-    return index;
-}
-
 int connect_to(const char * server){
 	char server_name[16];
 	int server_port = 0;
@@ -34,12 +25,12 @@ int connect_to(const char * server){
     
     int sock;
     if ((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-        loggerf("could not create socket");
+        LOGGER_ERROR("%s", "could not create socket");
     }
     if (connect(sock, (struct sockaddr*)&server_address,
             sizeof(server_address)) < 0) {
-        loggerf("could not connect to server");
-        loggerf(strerror(errno));
+        LOGGER_ERROR("%s", "could not connect to server");
+        LOGGER_ERROR("%s", strerror(errno));
     }
     return sock;
 }
@@ -49,11 +40,11 @@ struct message* send_and_recv_message(struct message* message_to_send, const cha
     int sock = connect_to(server);
     int sent = 0, received = 0;
     if((sent = send(sock, message_to_send, sizeof(struct message), 0)) < 0){
-        loggerf("something went wrong while sending");
+        LOGGER_ERROR("%s", "something went wrong while sending");
     }
     free(message_to_send);
     if((received = recv(sock, message_to_receive, sizeof(struct message), 0)) < 0){
-        loggerf("something went wrong while receiveing");
+        LOGGER_ERROR("%s", "something went wrong while receiveing");
     }
     close(sock);
     return message_to_receive;
@@ -64,17 +55,17 @@ void* send_and_recv_data(struct message* message_to_send, const char* server){
     int sock = connect_to(server);
     int sent = 0, received = 0;
     if((sent = send(sock, message_to_send, sizeof(struct message), 0)) < 0){
-        loggerf("something went wrong while sending");
+        LOGGER_ERROR("%s", "something went wrong while sending");
     }
     free(message_to_send);
     if((received = recv(sock, message_to_receive, sizeof(struct message), 0)) < 0){
-        loggerf("something went wrong while receiveing message");
+        LOGGER_ERROR("%s", "something went wrong while receiveing message");
     }
     char* data = NULL;
     if(message_to_receive->wait_for_message){
         data = malloc(sizeof(char) * message_to_receive->wait_for_message);
         if((received = recv(sock, data, sizeof(char) * message_to_receive->wait_for_message, 0)) < 0){
-            loggerf("something went wrong while receiveing data");
+            LOGGER_ERROR("%s", "something went wrong while receiveing data");
         }
     }
     free(message_to_receive);
@@ -91,16 +82,16 @@ struct message* send_data_recv_message(struct message* message,
     int sent = 0, received = 0;
     message->wait_for_message = size;
     if((sent = send(sock, message, sizeof(struct message), 0)) < 0){
-        loggerf("something went wrong while sending message");
+        LOGGER_ERROR("%s", "something went wrong while sending message");
         to_receive->status = -errno;
     }
     free(message);
     if((sent = send(sock, data, size, 0)) < 0){
-        loggerf("something went wrong while sending message");
+        LOGGER_ERROR("%s", "something went wrong while sending message");
         to_receive->status = -errno;
     }
     if((received = recv(sock, to_receive, sizeof(struct message), 0)) < 0){
-        loggerf("something went wrong while receiveing message");
+        LOGGER_ERROR("%s", "something went wrong while receiveing message");
         to_receive->status = -errno;
     }
     close(sock);
@@ -109,7 +100,7 @@ struct message* send_data_recv_message(struct message* message,
 
 long send_and_recv_status(struct message* message_to_send, const char * server){
     struct message* message_to_receive = send_and_recv_message(message_to_send, server);
-    intptr_t res = message_to_receive[0].status;
+    long res = message_to_receive[0].status;
     free(message_to_receive);
     return res;
 }

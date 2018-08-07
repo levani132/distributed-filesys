@@ -13,7 +13,6 @@
 #include <signal.h>
 
 #include "../logger.h"
-#include "../models/getattr_ans.h"
 #include "../message.h"
 #include "server_connector.h"
 

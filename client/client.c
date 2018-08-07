@@ -14,7 +14,6 @@
 #include "client_connector.h"
 #include "../logger.h"
 #include "../message.h"
-#include "../models/getattr_ans.h"
 #define STORAGE (*(struct storage*)fuse_get_context()->private_data)
 
 struct config config;

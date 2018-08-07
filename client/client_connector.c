@@ -11,7 +11,6 @@
 
 #include "../logger.h"
 #include "../message.h"
-#include "../models/getattr_ans.h"
 
 int index_of(const char * source, const char c){
     const char* ptr = strchr(source, c);

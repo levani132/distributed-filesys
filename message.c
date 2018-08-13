@@ -5,6 +5,7 @@
 
 char* function_name[] = {
     "",
+    "ping",
     "opendir",
     "readdir",
     "getattr",
@@ -19,7 +20,9 @@ char* function_name[] = {
     "mkdir",
     "rename",
     "unlink",
-    "rmdir"
+    "rmdir",
+    "restore",
+    "readall",
 };
 
 struct message* create_message(int function_id, long status, int wait_for_message, const char * small_data){

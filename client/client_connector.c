@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <sys/socket.h>
 
+#include "client_connector.h"
+#include "client_config.h"
 #include "../logger.h"
 #include "../message.h"
 
@@ -31,20 +33,30 @@ int connect_to(const char * server){
             sizeof(server_address)) < 0) {
         LOGGER_ERROR("%s", "could not connect to server");
         LOGGER_ERROR("%s", strerror(errno));
+        return ERRCONNECTION;
     }
     return sock;
 }
 
 struct message* send_and_recv_message(struct message* message_to_send, const char* server){
     struct message* message_to_receive = malloc(sizeof(struct message));
-    int sock = connect_to(server);
-    int sent = 0, received = 0;
+    int sock, sent = 0, received = 0;
+    if((sock = connect_to(server)) < 0){
+        message_to_receive->status = sock;
+        return message_to_receive;
+    }
     if((sent = send(sock, message_to_send, sizeof(struct message), 0)) < 0){
-        LOGGER_ERROR("%s", "something went wrong while sending");
+        LOGGER_ERROR("something went wrong while sending");
+        message_to_receive->status = sock;
+        close(sock);
+        return message_to_receive;
     }
     free(message_to_send);
     if((received = recv(sock, message_to_receive, sizeof(struct message), 0)) < 0){
-        LOGGER_ERROR("%s", "something went wrong while receiveing");
+        LOGGER_ERROR("something went wrong while receiveing");
+        message_to_receive->status = sock;
+        close(sock);
+        return message_to_receive;
     }
     close(sock);
     return message_to_receive;
@@ -52,20 +64,33 @@ struct message* send_and_recv_message(struct message* message_to_send, const cha
 
 void* send_and_recv_data(struct message* message_to_send, const char* server){
     struct message* message_to_receive = malloc(sizeof(struct message));
-    int sock = connect_to(server);
-    int sent = 0, received = 0;
+    long sock = 0, sent = 0, received = 0;
+    if((sock = connect_to(server)) < 0){
+        free(message_to_receive);
+        return (void*)sock;
+    }
     if((sent = send(sock, message_to_send, sizeof(struct message), 0)) < 0){
-        LOGGER_ERROR("%s", "something went wrong while sending");
+        LOGGER_ERROR("something went wrong while sending");
+        close(sock);
+        free(message_to_receive);
+        return (void*)ERRCONNECTION;
     }
     free(message_to_send);
     if((received = recv(sock, message_to_receive, sizeof(struct message), 0)) < 0){
-        LOGGER_ERROR("%s", "something went wrong while receiveing message");
+        LOGGER_ERROR("something went wrong while receiveing message");
+        close(sock);
+        free(message_to_receive);
+        return (void*)ERRCONNECTION;
     }
     char* data = NULL;
     if(message_to_receive->wait_for_message){
         data = malloc(sizeof(char) * message_to_receive->wait_for_message);
         if((received = recv(sock, data, sizeof(char) * message_to_receive->wait_for_message, 0)) < 0){
-            LOGGER_ERROR("%s", "something went wrong while receiveing data");
+            LOGGER_ERROR("something went wrong while receiveing data");
+            close(sock);
+            free(message_to_receive);
+            free(data);
+            return (void*)ERRCONNECTION;
         }
     }
     free(message_to_receive);
@@ -78,36 +103,56 @@ struct message* send_data_recv_message(struct message* message,
                                        int size, 
                                        const char* server){
     struct message* to_receive = malloc(sizeof(struct message));
-    int sock = connect_to(server);
-    int sent = 0, received = 0;
+    int sock = 0, sent = 0, received = 0;
+    if((sock = connect_to(server)) < 0){
+        to_receive->status = sock;
+        close(sock);
+        free(message);
+        return to_receive;
+    }
     message->wait_for_message = size;
     if((sent = send(sock, message, sizeof(struct message), 0)) < 0){
-        LOGGER_ERROR("%s", "something went wrong while sending message");
-        to_receive->status = -errno;
+        LOGGER_ERROR("something went wrong while sending message");
+        to_receive->status = ERRCONNECTION;
+        close(sock);
+        free(message);
+        return to_receive;
     }
     free(message);
     if((sent = send(sock, data, size, 0)) < 0){
-        LOGGER_ERROR("%s", "something went wrong while sending message");
-        to_receive->status = -errno;
+        LOGGER_ERROR("something went wrong while sending message");
+        to_receive->status = ERRCONNECTION;
+        close(sock);
+        return to_receive;
     }
     if((received = recv(sock, to_receive, sizeof(struct message), 0)) < 0){
-        LOGGER_ERROR("%s", "something went wrong while receiveing message");
-        to_receive->status = -errno;
+        LOGGER_ERROR("something went wrong while receiveing message");
+        to_receive->status = ERRCONNECTION;
+        close(sock);
+        return to_receive;
     }
     close(sock);
     return to_receive;
 }
 
-long send_and_recv_status(struct message* message_to_send, const char * server){
-    struct message* message_to_receive = send_and_recv_message(message_to_send, server);
-    long res = message_to_receive[0].status;
-    free(message_to_receive);
+long parse_status(struct message * msg){
+    long res = msg->status;
+    free(msg);
     return res;
 }
 
+long send_and_recv_status(struct message* message_to_send, const char * server){
+    return parse_status(send_and_recv_message(message_to_send, server));
+}
+
 long send_data_recv_status(struct message * to_send, const char* data, int size, const char* server){
-    struct message* to_receive = send_data_recv_message(to_send, data, strlen(data) + 1, server);
-    int retval = to_receive->status;
-    free(to_receive);
-    return retval;
+    return parse_status(send_data_recv_message(to_send, data, strlen(data) + 1, server));
+}
+
+long connector_ping(const char* server){
+    return send_and_recv_status(create_message(fnc_ping, 0, 0, ""), server);
+}
+
+long connector_reconnect(struct server * server, char* hotswap, const char* diskname){
+    return 0;
 }

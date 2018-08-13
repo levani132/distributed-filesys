@@ -3,6 +3,9 @@
 #include <sys/types.h>
 #include "fuse.h"
 
+#define ERRCONNECTION   -132
+#define ERRHASH         -133
+
 struct message {
     int function_id;
     long status;
@@ -19,8 +22,14 @@ struct getattr_ans {
     struct stat stat;
 };
 
+struct server_open_ans {
+    int retval;
+
+};
+
 enum function_id {
     fnc_nothing,
+    fnc_ping,
     fnc_opendir,
     fnc_readdir,
     fnc_getattr,
@@ -35,7 +44,9 @@ enum function_id {
     fnc_mkdir,
     fnc_rename,
     fnc_unlink,
-    fnc_rmdir
+    fnc_rmdir,
+    fnc_restore,
+    fnc_readall
 };
 
 extern char* function_name[];

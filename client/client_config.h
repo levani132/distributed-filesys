@@ -1,11 +1,27 @@
 #pragma once
+#include <linux/limits.h>
+
+#define SERVER_DOWN 0
+#define SERVER_UP 1
+
+struct fd_wrapper {
+    long fd;
+    long server_fd;
+};
+
+struct server {
+    char name[20];
+    int state;
+    struct fd_wrapper* fds;
+    int n_fds;
+};
 
 struct storage {
     char * diskname;
     char * mountpoint;
     int raid;
     int n_servers;
-    char ** servers;
+    struct server * servers;
     char * hotswap;
 };
 
@@ -20,3 +36,7 @@ struct config {
 
 void config_init(struct config * config, char * filename);
 void config_dest(struct config * config);
+
+struct fd_wrapper* fd_wrapper_create(long fd, long server_fd);
+int insert_fd_wrapper(struct server* server, struct fd_wrapper* fd_wrapper);
+long get_server_fd(struct server* server, long fd);

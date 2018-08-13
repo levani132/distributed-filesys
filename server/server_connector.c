@@ -82,6 +82,7 @@ int connector_send_data(int sock, void* data, int size){
         loggerf("something went wrong when sending data");
         return -errno;
     }
+    free(data);
     return 0;
 }
 

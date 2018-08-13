@@ -4,7 +4,9 @@
 #include <errno.h>
 #include <error.h>
 #include <assert.h>
+
 #include "client_config.h"
+#include "client_connector.h"
 #include "../logger.h"
 
 int n_storages(FILE * file){
@@ -44,6 +46,7 @@ int parse_storage(struct storage * storage, FILE * file){
         storage->mountpoint = strdup(mountpoint_tmp);
         storage->diskname = strdup(diskname_tmp);
         storage->hotswap = strdup(hotswap_tmp);
+        servers_tmp[strlen(servers_tmp) - 1] = '\0';
         loggerf("parse_storage: diskname - %s", storage->diskname);
         loggerf("parse_storage: mountpoint - %s", storage->mountpoint);
         loggerf("parse_storage: raid - %d", storage->raid);
@@ -52,10 +55,17 @@ int parse_storage(struct storage * storage, FILE * file){
         storage->n_servers = 0;
         storage->servers = malloc(0);
         while(server != NULL){
-            storage->servers = realloc(storage->servers, (storage->n_servers + 1) * sizeof(char*));
-            storage->servers[storage->n_servers] = strdup(server);
+            storage->servers = realloc(storage->servers, (storage->n_servers + 1) * sizeof*storage->servers);
+            strcpy(storage->servers[storage->n_servers].name, server);
+            storage->servers[storage->n_servers].state = connector_ping(server);
+            storage->servers[storage->n_servers].n_fds = 0;
+            storage->servers[storage->n_servers].fds = NULL;
+            if(!storage->servers[storage->n_servers].state){
+                loggerf("parse_storage: server - %s couldn't be parsed",  storage->servers[storage->n_servers].name);
+                connector_reconnect(&storage->servers[storage->n_servers], storage->hotswap, storage->diskname);
+            }
             server = strtok(NULL, ", ");
-            loggerf("parse_storage: server - %s", storage->servers[storage->n_servers]);
+            loggerf("parse_storage: server - %s", storage->servers[storage->n_servers].name);
             storage->n_servers++;
         }
         assert(storage->n_servers > 0);
@@ -81,7 +91,8 @@ void config_init(struct config * config, char * filename){
     memset(config->storages, 0, sizeof * config->storages);
     int i = 0;
     loggerf("config->n_storages: %d", config->n_storages);
-    while(parse_storage(&config->storages[i], file)){i++;}
+    while(parse_storage(&config->storages[i++], file));
+    fclose(file);
     assert(config->n_storages > 0);
 }
 
@@ -93,8 +104,38 @@ void config_dest(struct config * config){
         free(config->storages[i].hotswap);
         free(config->storages[i].mountpoint);
         int j = 0; for(; j < config->storages[i].n_servers; j++){
-            free(config->storages[i].servers[j]);
+            free(config->storages[i].servers[j].fds);
         }
         free(config->storages[i].servers);
     }
+}
+
+struct fd_wrapper* fd_wrapper_create(long fd, long server_fd){
+    struct fd_wrapper* result = malloc(sizeof*result);
+    result->fd = fd;
+    result->server_fd = server_fd;
+    return result;
+}
+
+int insert_fd_wrapper(struct server* server, struct fd_wrapper* fd_wrapper){
+    int i = 0; for(; i < server->n_fds; i++){
+        if(server->fds[i].fd == fd_wrapper->fd){
+            server->fds[i].server_fd = fd_wrapper->server_fd;
+            free(fd_wrapper);
+            return 0;
+        }
+    }
+    server->fds = realloc(server->fds, sizeof(struct fd_wrapper) * (++server->n_fds));
+    memcpy(&server->fds[server->n_fds - 1], fd_wrapper, sizeof*fd_wrapper);
+    free(fd_wrapper);
+    return 0;
+}
+
+long get_server_fd(struct server* server, long fd){
+    int i = 0; for(; i < server->n_fds; i++){
+        if(server->fds[i].fd == fd){
+            return server->fds[i].server_fd;
+        }
+    }
+    return -1;
 }

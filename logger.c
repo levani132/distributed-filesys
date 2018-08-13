@@ -64,3 +64,11 @@ void logger_unset_file(){
     fclose(file);
     file = NULL;
 }
+
+void memswap(void * left, void * right, size_t size){
+    void * tmp = malloc(size);
+    memcpy(tmp, left, size);
+    memcpy(left, right, size);
+    memcpy(right, tmp, size);
+    free(tmp);
+}

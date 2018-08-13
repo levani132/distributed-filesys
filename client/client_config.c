@@ -39,7 +39,7 @@ void parse_config(struct config * config, FILE * file){
     loggerf("parse_config: timeout - %d", config->timeout);
 }
 
-int parse_storage(struct storage * storage, FILE * file){
+int parse_storage(struct storage * storage, struct config * config, FILE * file){
     char diskname_tmp[256], mountpoint_tmp[256], servers_tmp[256], hotswap_tmp[256];
     if(fscanf(file, " diskname = %s mountpoint = %s raid = %d servers = %[^\n] hotswap = %s",
             diskname_tmp, mountpoint_tmp, &storage->raid, servers_tmp, hotswap_tmp) != EOF){
@@ -62,7 +62,7 @@ int parse_storage(struct storage * storage, FILE * file){
             storage->servers[storage->n_servers].fds = NULL;
             if(!storage->servers[storage->n_servers].state){
                 loggerf("parse_storage: server - %s couldn't be parsed",  storage->servers[storage->n_servers].name);
-                connector_reconnect(&storage->servers[storage->n_servers], storage->hotswap, storage->diskname);
+                connector_reconnect(&storage->servers[storage->n_servers], storage, config->timeout);
             }
             server = strtok(NULL, ", ");
             loggerf("parse_storage: server - %s", storage->servers[storage->n_servers].name);
@@ -85,13 +85,13 @@ void config_init(struct config * config, char * filename){
     FILE* error_file = fopen(config->errorlog, "w");
     assert(file != NULL);
     loggerf("from now on %s will be used for logs (see next messages there)", config->errorlog);
-    logger_set_file(error_file);
+    logger_set_file(error_file, config->errorlog);
     loggerf("------------- LOGS -----------------");
     config->storages = malloc(config->n_storages * sizeof(struct storage));
     memset(config->storages, 0, sizeof * config->storages);
     int i = 0;
     loggerf("config->n_storages: %d", config->n_storages);
-    while(parse_storage(&config->storages[i++], file));
+    while(parse_storage(&config->storages[i++], config, file));
     fclose(file);
     assert(config->n_storages > 0);
 }

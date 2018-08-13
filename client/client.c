@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <linux/limits.h>
 #include <sys/stat.h>
+#include <sys/mount.h>
 
 #include "client_config.h"
 #include "client_connector.h"
@@ -27,6 +28,15 @@ void log_end(int i, const char * fnc){
     LOGGER("ended    [%s] from connector", fnc);
 }
 
+void shut_down () {
+    loggerf("fuse is unmounting and shutting down");
+    loggerf("------------------------------------");
+    fuse_unmount(STORAGE.mountpoint, NULL);
+    config_dest(&config);
+    logger_unset_file();
+    exit(0);
+}
+
 void reconnect(int i){
     LOGGER("server down will try to reconnect");
     STORAGE.servers[i].state = 0;
@@ -38,9 +48,9 @@ void reconnect(int i){
     }
     if(i2 == 0){
         LOGGER("all servers down");
-        exit(-1);
+        shut_down();
     }
-    connector_reconnect(&STORAGE.servers[i2], STORAGE.hotswap, STORAGE.diskname);
+    connector_reconnect(&STORAGE.servers[i2], &STORAGE, config.timeout);
 }
 
 int client_getattr(const char *path, struct stat *statbuf)
@@ -193,6 +203,11 @@ int client_open(const char *path, struct fuse_file_info *fi)
         msgs[i] = NULL;
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            int ind = ((STORAGE.n_servers + i - 1) % STORAGE.n_servers);
+            send_and_recv_status(create_message(fnc_restoreall, 0, 0, STORAGE.servers[ind].name), STORAGE.servers[i].name);
+
+        }
         log_start(i, "client_open");
         struct message* to_send = create_message(fnc_open, fi->flags, 0, path);
         struct message* to_receive = send_and_recv_message(to_send, STORAGE.servers[i].name);

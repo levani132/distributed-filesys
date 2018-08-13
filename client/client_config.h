@@ -3,6 +3,7 @@
 
 #define SERVER_DOWN 0
 #define SERVER_UP 1
+#define SERVER_STARTING 2
 
 struct fd_wrapper {
     long fd;

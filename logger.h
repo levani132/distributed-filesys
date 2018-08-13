@@ -4,7 +4,7 @@
 void logger(const char * storage_name, const char * server_addr, const char * fmt, ...);
 void loggerf(const char * fmt, ...);
 void logger_error(const char* filename, int line, const char * fmt, ...);
-void logger_set_file(FILE * file_in);
+void logger_set_file(FILE * file_in, char* name);
 void logger_unset_file();
 void memswap(void * left, void * right, int size);
 

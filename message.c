@@ -23,6 +23,7 @@ char* function_name[] = {
     "rmdir",
     "restore",
     "readall",
+    "restoreall",
 };
 
 struct message* create_message(int function_id, long status, int wait_for_message, const char * small_data){

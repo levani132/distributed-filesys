@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/socket.h>
+#include <pthread.h>
 
 #include "client_connector.h"
 #include "client_config.h"
@@ -153,6 +154,48 @@ long connector_ping(const char* server){
     return send_and_recv_status(create_message(fnc_ping, 0, 0, ""), server);
 }
 
-long connector_reconnect(struct server * server, char* hotswap, const char* diskname){
+void* reconnect_thread(void* data){
+    void** datatmp = (void**)data;
+    struct server * server = (struct server*)datatmp[0];
+    struct storage* storage = (struct storage*)datatmp[1];
+    int timeout = (int)(long)datatmp[2];
+    static int is_swap;
+    int i = 1;
+    while(1){
+        sleep(1);
+        int status = send_and_recv_status(create_message(fnc_ping, 0, 0, ""), server->name);
+        if(status == 1){
+            loggerf("try No: %d SUCCESS", i);
+            loggerf("connection restored with %s", server->name);
+            server->state = SERVER_STARTING;
+            return NULL;
+        }else{
+            if(i >= timeout){
+                loggerf("try No: %d FAILED", i);
+                loggerf("timout exceeded, server is down");
+                if(!is_swap){
+                    char tmp[20];
+                    strcpy(tmp, server->name);
+                    strcpy(server->name, storage->hotswap);
+                    strcpy(storage->hotswap, tmp);
+                    loggerf("trying to connect with hotswap");
+                    return reconnect_thread(data);
+                }
+                loggerf("couldn't connect to swap either");
+                free(data);
+                return NULL;
+            }
+            loggerf("trying to reconnect in 1s, try No: %d FAILED", i);
+        }
+    }
+}
+
+long connector_reconnect(struct server * server, struct storage* storage, int timeout){
+    pthread_t tid;
+    void** data = malloc(3 * sizeof(void*));
+    data[0] = (void*)server;
+    data[1] = (void*)storage;
+    data[2] = (void*)(long)timeout;
+    pthread_create(&tid, NULL, reconnect_thread, data);
     return 0;
 }

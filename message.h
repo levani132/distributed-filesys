@@ -46,7 +46,8 @@ enum function_id {
     fnc_unlink,
     fnc_rmdir,
     fnc_restore,
-    fnc_readall
+    fnc_readall,
+    fnc_restoreall
 };
 
 extern char* function_name[];

@@ -39,7 +39,7 @@ void shut_down () {
 
 void reconnect(int i){
     LOGGER("server down will try to reconnect");
-    STORAGE.servers[i].state = 0;
+    STORAGE.servers[i].state = SERVER_DOWN;
     int i2 = i;
     while(i2 != STORAGE.n_servers - 1 && STORAGE.servers[i + 1].state){
         memswap(&STORAGE.servers[i2], &STORAGE.servers[(i2 + 1) % STORAGE.n_servers], sizeof(struct server));
@@ -205,8 +205,20 @@ int client_open(const char *path, struct fuse_file_info *fi)
             continue;
         if(STORAGE.servers[i].state == SERVER_STARTING){
             int ind = ((STORAGE.n_servers + i - 1) % STORAGE.n_servers);
-            send_and_recv_status(create_message(fnc_restoreall, 0, 0, STORAGE.servers[ind].name), STORAGE.servers[i].name);
-
+            int status = send_and_recv_status(create_message(fnc_restoreall, 0, 0, STORAGE.servers[ind].name), STORAGE.servers[i].name);
+            if(status){
+                LOGGER("restored data from %s", STORAGE.servers[ind].name);
+                STORAGE.servers[i].state = SERVER_UP;
+            }else if(status == ERRCONNECTION){
+                LOGGER("couldn't restore data");
+                LOGGER("connection still down");
+                LOGGER("starting reconnection");
+                reconnect(i--);
+                continue;
+            }else{
+                LOGGER_ERROR("%s %d", strerror(status), status);
+                continue;
+            }
         }
         log_start(i, "client_open");
         struct message* to_send = create_message(fnc_open, fi->flags, 0, path);

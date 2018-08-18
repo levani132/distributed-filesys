@@ -32,6 +32,7 @@ void shut_down () {
     loggerf("fuse is unmounting and shutting down");
     loggerf("------------------------------------");
     fuse_unmount(STORAGE.mountpoint, NULL);
+    umount(STORAGE.mountpoint);
     config_dest(&config);
     logger_unset_file();
     exit(0);
@@ -53,10 +54,36 @@ void reconnect(int i){
     connector_reconnect(&STORAGE.servers[i2], &STORAGE, config.timeout);
 }
 
+
+
+int restoreall(int* j){
+    int i = *j;
+    int ind = ((STORAGE.n_servers + i - 1) % STORAGE.n_servers);
+    int status = send_and_recv_status(create_message(fnc_restoreall, 0, 0, STORAGE.servers[ind].name), STORAGE.servers[i].name);
+    if(status == 0){
+        LOGGER("restored data from %s", STORAGE.servers[ind].name);
+        STORAGE.servers[i].state = SERVER_UP;
+        return 1;
+    }else if(status == ERRCONNECTION){
+        LOGGER("couldn't restore data");
+        LOGGER("connection still down");
+        LOGGER("starting reconnection");
+        reconnect(*j--);
+        return 0;
+    }else{
+        LOGGER_ERROR("%s %d", strerror(status), status);
+        return 0;
+    }
+}
+
 int client_getattr(const char *path, struct stat *statbuf)
 {
     int retval = 0;
     int i = 0;for(; i < 1; i++){
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_getattr");
         struct getattr_ans* data = (struct getattr_ans*)send_and_recv_data(create_message(fnc_getattr, 0, 0, path), STORAGE.servers[i].name);
         log_end(i, "client_getattr");
@@ -79,6 +106,10 @@ int client_mknod(const char *path, mode_t mode, dev_t dev)
     int i = 0; for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "connector_mknod");
         retval = send_and_recv_status(create_mk_message(fnc_mknod, mode, dev, path), STORAGE.servers[i].name);
         log_end(i, "connector_mknod");
@@ -96,6 +127,10 @@ int client_mkdir(const char *path, mode_t mode)
     int i = 0; for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "connector_mkdir");
         retval = send_and_recv_status(create_mk_message(fnc_mkdir, mode, 0, path), STORAGE.servers[i].name);
         log_end(i, "connector_mkdir");
@@ -113,6 +148,10 @@ int client_unlink(const char *path)
     int i = 0; for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "connector_unlink");
         retval = send_and_recv_status(create_ext_message(fnc_unlink, 0, 0, 0, 0, path), STORAGE.servers[i].name);
         log_end(i, "connector_unlink");
@@ -130,6 +169,10 @@ int client_rmdir(const char *path)
     int i = 0; for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "connector_rmdir");
         retval = send_and_recv_status(create_ext_message(fnc_rmdir, 0, 0, 0, 0, path), STORAGE.servers[i].name);
         log_end(i, "connector_rmdir");
@@ -148,6 +191,10 @@ int client_rename(const char *path, const char *newpath)
     int i = 0; for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_rename");
         retval = send_data_recv_status(create_message(fnc_rename, 0, 0, path), newpath, strlen(newpath) + 1, STORAGE.servers[i].name);
         log_end(i, "client_rename");
@@ -165,6 +212,10 @@ int client_truncate(const char *path, off_t newsize)
     int i = 0; for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_truncate");
         retval = send_and_recv_status(create_ext_message(fnc_truncate, 0, 0, 0, newsize, path), STORAGE.servers[i].name);
         log_end(i, "client_truncate");
@@ -182,6 +233,10 @@ int client_utime(const char *path, struct utimbuf *ubuf)
     int i = 0; for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_utime");
         retval = send_data_recv_status(create_message(fnc_utime, 0, sizeof*ubuf, path), (const char*)ubuf, sizeof*ubuf, STORAGE.servers[i].name);
         log_end(i, "client_utime");
@@ -204,21 +259,8 @@ int client_open(const char *path, struct fuse_file_info *fi)
         if(!STORAGE.servers[i].state)
             continue;
         if(STORAGE.servers[i].state == SERVER_STARTING){
-            int ind = ((STORAGE.n_servers + i - 1) % STORAGE.n_servers);
-            int status = send_and_recv_status(create_message(fnc_restoreall, 0, 0, STORAGE.servers[ind].name), STORAGE.servers[i].name);
-            if(status){
-                LOGGER("restored data from %s", STORAGE.servers[ind].name);
-                STORAGE.servers[i].state = SERVER_UP;
-            }else if(status == ERRCONNECTION){
-                LOGGER("couldn't restore data");
-                LOGGER("connection still down");
-                LOGGER("starting reconnection");
-                reconnect(i--);
+            if(!restoreall(&i))
                 continue;
-            }else{
-                LOGGER_ERROR("%s %d", strerror(status), status);
-                continue;
-            }
         }
         log_start(i, "client_open");
         struct message* to_send = create_message(fnc_open, fi->flags, 0, path);
@@ -262,8 +304,14 @@ int client_open(const char *path, struct fuse_file_info *fi)
 int client_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
     int i = 0;for(; i < 1; i++){
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_read");
         long fd = get_server_fd(&STORAGE.servers[i], fi->fh);
+        if(fd == -1)
+            return EBADF;
         char * server_buf = (char*)send_and_recv_data(create_ext_message(fnc_read, fd, 0, size, offset, ""), STORAGE.servers[i].name);
         log_end(i, "client_read");
         if((long)server_buf == ERRCONNECTION){
@@ -271,6 +319,7 @@ int client_read(const char *path, char *buf, size_t size, off_t offset, struct f
             continue;
         }
         strcpy(buf, server_buf);
+        free(server_buf);
     }
 	return size;
 }
@@ -283,7 +332,13 @@ int client_write(const char *path, const char *buf, size_t size, off_t offset,
     int i = 0;for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         long fd = get_server_fd(&STORAGE.servers[i], fi->fh);
+        if(fd == -1)
+            return EBADF;
         log_start(i, "client_write");
         LOGGER("server: %s fd: %ld", STORAGE.servers[i].name, fd);
         res = send_data_recv_status(
@@ -311,8 +366,14 @@ int client_release(const char *path, struct fuse_file_info *fi)
     int i = 0;for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_release");
         long fd = get_server_fd(&STORAGE.servers[i], fi->fh);
+        if(fd == -1)
+            return EBADF;
         res = send_and_recv_status(create_message(fnc_release, fd, 0, ""), STORAGE.servers[i].name);
         log_end(i, "client_release");
         if(res == ERRCONNECTION){
@@ -332,6 +393,10 @@ int client_opendir(const char *path, struct fuse_file_info *fi)
     int i = 0;for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_opendir");
         struct message* message_to_send = create_message(fnc_opendir, 0, 0, path);
         intptr_t dp_server = send_and_recv_status(message_to_send, STORAGE.servers[i].name);
@@ -353,8 +418,15 @@ int client_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t of
 	       struct fuse_file_info *fi)
 {
     int i = 0; for(; i < 1; i++){
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_readdir");
-        char* entries = (char*)send_and_recv_data(create_message(fnc_readdir, get_server_fd(&STORAGE.servers[i], fi->fh), 0, ""), STORAGE.servers[i].name);
+        long fd = get_server_fd(&STORAGE.servers[i], fi->fh);
+        if(fd == -1)
+            return EBADF;
+        char* entries = (char*)send_and_recv_data(create_message(fnc_readdir, fd, 0, ""), STORAGE.servers[i].name);
         log_end(i, "client_readdir");
         if((long)entries == ERRCONNECTION){
             reconnect(i--);
@@ -384,14 +456,19 @@ int client_releasedir(const char *path, struct fuse_file_info *fi)
     int i = 0; for(; i < STORAGE.n_servers; i++){
         if(!STORAGE.servers[i].state)
             continue;
+        if(STORAGE.servers[i].state == SERVER_STARTING){
+            if(!restoreall(&i))
+                continue;
+        }
         log_start(i, "client_releasedir");
-        res = send_and_recv_status(create_message(fnc_releasedir, get_server_fd(&STORAGE.servers[i], fi->fh), 0, ""), STORAGE.servers[i].name);
+        intptr_t fd = get_server_fd(&STORAGE.servers[i], fi->fh);
+        if(fd == -1)
+            return EBADF;
+        res = send_and_recv_status(create_message(fnc_releasedir, fd, 0, ""), STORAGE.servers[i].name);
         log_end(i, "client_releasedir");
         if(res == ERRCONNECTION){
             reconnect(i--);
         }
-        else if(res < 0)
-            res = -errno;
     }
     return res;
 }

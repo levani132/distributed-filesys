@@ -159,7 +159,7 @@ void* reconnect_thread(void* data){
     struct server * server = (struct server*)datatmp[0];
     struct storage* storage = (struct storage*)datatmp[1];
     int timeout = (int)(long)datatmp[2];
-    static int is_swap;
+    int is_swap = (int)(long)datatmp[3];
     int i = 1;
     while(1){
         sleep(1);
@@ -171,13 +171,20 @@ void* reconnect_thread(void* data){
             return NULL;
         }else{
             if(i >= timeout){
+                server->state = SERVER_DOWN;
                 loggerf("try No: %d FAILED", i);
                 loggerf("timout exceeded, server is down");
                 if(!is_swap){
+                    datatmp[3] = (void*)(long)1;
                     char tmp[20];
                     strcpy(tmp, server->name);
                     strcpy(server->name, storage->hotswap);
                     strcpy(storage->hotswap, tmp);
+                    if(server->n_fds){
+                        free(server->fds);
+                        server->fds = NULL;
+                    }
+                    server->n_fds = 0;
                     loggerf("trying to connect with hotswap");
                     return reconnect_thread(data);
                 }
@@ -185,17 +192,18 @@ void* reconnect_thread(void* data){
                 free(data);
                 return NULL;
             }
-            loggerf("trying to reconnect in 1s, try No: %d FAILED", i);
+            loggerf("trying to reconnect in 1s, try No: %d FAILED", i++);
         }
     }
 }
 
 long connector_reconnect(struct server * server, struct storage* storage, int timeout){
     pthread_t tid;
-    void** data = malloc(3 * sizeof(void*));
+    void** data = malloc(4 * sizeof(void*));
     data[0] = (void*)server;
     data[1] = (void*)storage;
     data[2] = (void*)(long)timeout;
+    data[3] = (void*)(long)0;
     pthread_create(&tid, NULL, reconnect_thread, data);
     return 0;
 }

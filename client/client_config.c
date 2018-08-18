@@ -85,7 +85,7 @@ void config_init(struct config * config, char * filename){
     FILE* error_file = fopen(config->errorlog, "w");
     assert(file != NULL);
     loggerf("from now on %s will be used for logs (see next messages there)", config->errorlog);
-    logger_set_file(error_file, config->errorlog);
+    logger_set_file(error_file);
     loggerf("------------- LOGS -----------------");
     config->storages = malloc(config->n_storages * sizeof(struct storage));
     memset(config->storages, 0, sizeof * config->storages);

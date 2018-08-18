@@ -67,7 +67,13 @@ struct message* server_open (const char * path, int flags){
     return create_ext_message(0, not_same ? ERRHASH : (long)fd, 0, tmpstat.st_mtime, 0, hash);
 }
 
-char* server_readdir (intptr_t dp){
+char* server_readdir (intptr_t dp, char* path){
+    int need = dp == -1;
+    if(need){
+        char fullpath[PATH_MAX];
+        get_fullpath(fullpath, path);
+        dp = (intptr_t)opendir(fullpath);
+    }
     struct dirent *de;
     int count = 0;
     while ((de = readdir((DIR *) dp)) != NULL) {
@@ -94,6 +100,9 @@ char* server_readdir (intptr_t dp){
         ((int*)data)[i] = offset;
         strcpy(data + offset, de->d_name);
         offset = new_size;
+    }
+    if(need){
+        closedir((DIR *)dp);
     }
     return data;
 }
@@ -220,7 +229,7 @@ int mkdir_recursive(char* fullpath){
 
 int server_restore(const char* path, const char* server){
     int retval;
-    loggerf("starting restoring from %s", server);
+    loggerf("starting restoring %s from %s", path, server);
     char * data_to_restore = send_and_recv_data(create_message(fnc_readall, 0, 0, path), server);
     loggerf("%s data_to_restore: %s", path, data_to_restore + sizeof(int));
     char fullpath[PATH_MAX];
@@ -232,7 +241,7 @@ int server_restore(const char* path, const char* server){
             return retval;
         }
         get_fullpath(fullpath, path);
-        fd = open(fullpath, O_WRONLY | O_CREAT | O_TRUNC);
+        fd = open(fullpath, O_WRONLY | O_CREAT | O_TRUNC, 0777);
         if(fd < 0){
             return -errno;
         }
@@ -273,9 +282,83 @@ char* server_readall(const char* path){
     if(fread(file_content + sizeof(int), fsize, 1, file) < 0){
         LOGGER_ERROR("%s %d", strerror(errno), errno);
     }
-    fclose(file);
+    //fclose(file);
     loggerf("returning %s", file_content + sizeof(int));
     return file_content;
+}
+
+int empty_directory(const char *path){
+    DIR *dir = opendir(path);
+    size_t path_len = strlen(path);
+    int r = -1;
+    if (dir){
+        struct dirent *dirent;
+        r = 0;
+        while (!r && (dirent = readdir(dir))){
+            int r2 = -1;
+            if (!strcmp(dirent->d_name, ".") || !strcmp(dirent->d_name, ".."))
+                continue;
+            size_t len = path_len + strlen(dirent->d_name) + 2;
+            char *buf = malloc(len);
+            if (buf){
+                struct stat statbuf;
+                snprintf(buf, len, "%s/%s", path, dirent->d_name);
+                if (!stat(buf, &statbuf)){
+                    if (S_ISDIR(statbuf.st_mode))
+                        r2 = empty_directory(buf);
+                    else
+                        r2 = unlink(buf);
+                }
+                free(buf);
+            }
+            r = r2;
+        }
+        closedir(dir);
+    }
+    return r;
+}
+
+int server_restoreall(const char* path, const char* server, int first){
+    char fullpath[PATH_MAX];
+    get_fullpath(fullpath, path);
+    if(first && empty_directory(fullpath)){
+        LOGGER_ERROR("%s %d", strerror(errno), errno);
+    }
+    int retval = 0;
+    loggerf("reading directory %s from %s", path, server);
+    char* entries = (char*)send_and_recv_data(create_message(fnc_readdir, -1, 0, path), server);
+    if((long)entries == ERRCONNECTION){
+        free(entries);
+        return -1;
+    }
+    int* offsets = (int*)entries;
+    int count = offsets[0];
+    offsets++;
+    if(count < 0){
+        loggerf("couldn't read dir from server %s", server);
+        return -ENOMEM;
+    }
+    loggerf("read directory from %s success, count %d", server, count);
+    int j = 0; for(; j < count; j++){
+        char child[PATH_MAX];
+        char fullchild[PATH_MAX];
+        strcpy(child, path);
+        if(!strcmp((entries + offsets[j]), ".") || !strcmp((entries + offsets[j]), ".."))
+            continue;
+        strcat(child, (entries + offsets[j]));
+        get_fullpath(fullchild, child);
+        loggerf(fullchild);
+        struct getattr_ans* ans = (struct getattr_ans*)send_and_recv_data(create_message(fnc_getattr, 0, 0, child), server);
+        if(S_ISREG(ans->stat.st_mode)){
+            server_restore(child, server);
+        }else if(S_ISDIR(ans->stat.st_mode)){
+            strcat(child, "/");
+            server_restoreall(child, server, 0);
+        }
+        free(ans);
+    }
+    free(entries);
+    return retval;
 }
 
 int handle_message(int sock, struct message* mr){
@@ -301,10 +384,10 @@ int handle_message(int sock, struct message* mr){
         );
     }else if(mr->function_id == fnc_releasedir){
         retval = connector_send_status(sock,
-            closedir((DIR *)(uintptr_t)mr->status)
+            closedir((DIR *)(intptr_t)mr->status)
         );
     }else if(mr->function_id == fnc_readdir){
-        char * res = server_readdir(mr->status);
+        char * res = server_readdir(mr->status, mr->small_data);
         int byte_count = ((int*)res)[((int*)res)[0]] + strlen(res + ((int*)res)[((int*)res)[0]]) + 1;
         retval = connector_send_data(sock, res, byte_count);
     }else if(mr->function_id == fnc_getattr){
@@ -358,6 +441,10 @@ int handle_message(int sock, struct message* mr){
     }else if(mr->function_id == fnc_readall){
         char* data = server_readall(mr->small_data);
         retval = connector_send_data(sock, data, ((int*)data)[0] + sizeof(int));
+    }else if(mr->function_id == fnc_restoreall){
+        retval = connector_send_status(sock,
+            server_restoreall("/", mr->small_data, 1)
+        );
     }
     return retval;
 }

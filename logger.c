@@ -5,7 +5,6 @@
 #include <time.h>
 
 FILE * file = NULL;
-FILE * fileerr = NULL;
 
 void logger(const char * storage_name, const char * server_addr, const char * fmt, ...){
     va_list ar;
@@ -56,16 +55,13 @@ void logger_error(const char* filename, int line, const char * fmt, ...){
     fflush(file ? file : stdout);
 }
 
-void logger_set_file(FILE * file_in, char* name){
-    file = freopen(name, "w", stdout);
-    fileerr = freopen(name, "w", stderr);
+void logger_set_file(FILE * file_in){
+    file = file_in;
 }
 
 void logger_unset_file(){
     fclose(file);
-    fclose(fileerr);
     file = NULL;
-    fileerr = NULL;
 }
 
 void memswap(void * left, void * right, size_t size){

@@ -1,20 +1,47 @@
 #include <arpa/inet.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <stdarg.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
-#include <sys/socket.h>
-#include <pthread.h>
+#include <string.h>
 
-#include "client_connector.h"
-#include "client_config.h"
-#include "../logger.h"
-#include "../message.h"
+#include "logger.h"
+#include "message.h"
+#include "protocol.h"
 
+
+// This method creates server with params ip and port
+int connector_open_server_on(const char * ip, int port){
+	struct sockaddr_in server_address;
+	memset(&server_address, 0, sizeof(server_address));
+	server_address.sin_family = AF_INET;
+
+	server_address.sin_port = htons(port);
+
+	inet_aton(ip, &server_address.sin_addr);
+
+	int listen_sock;
+	if ((listen_sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+		console.log("could not create listen socket");
+		return 1;
+	}
+
+	if ((bind(listen_sock, (struct sockaddr *)&server_address,
+	          sizeof(server_address))) < 0) {
+		console.log("could not bind socket");
+		return 1;
+	}
+
+	int wait_size = 16;
+	if (listen(listen_sock, wait_size) < 0) {
+		console.log("could not open socket for listening");
+		return 1;
+	}
+    return listen_sock;
+}
+
+// This method connects to server (assuming server has format {ip}:{port})
+// It's private
 int connect_to(const char * server){
 	char server_name[16];
 	int server_port = 0;
@@ -37,6 +64,67 @@ int connect_to(const char * server){
         return ERRCONNECTION;
     }
     return sock;
+}
+
+struct message* connector_get_message(int sock){
+    int n = 0;
+    struct message* message = malloc(sizeof(struct message));
+    memset(message, 0, sizeof(struct message));
+
+    if ((n = recv(sock, message, sizeof(struct message), 0)) > 0) {
+        return message;
+    }else{
+        free(message);
+        return NULL;
+    }
+}
+
+void* connector_get_data(int sock, int size){
+    int n = 0;
+    char* message = malloc(size);
+    memset(message, 0, size);
+
+    if ((n = recv(sock, message, size, 0)) > 0) {
+        return message;
+    }else{
+        return NULL;
+    }
+}
+
+int connector_send_message(int sock, struct message* message){
+    int n_sent;
+    if((n_sent = send(sock, message, sizeof*message, 0)) != sizeof*message){
+        console.log("something went wrong when sending message");
+        return -errno;
+    }
+    return n_sent;
+}
+
+int connector_send_data(int sock, void* data, int size){
+    struct message* message = create_message(0, 0, size, "");
+    int n_sent;
+    if((n_sent = connector_send_message(sock, message)) < 0){
+        free(message);
+        return n_sent;
+    }
+    free(message);
+    if(size && (n_sent = send(sock, data, size, 0)) != size){
+        console.log("something went wrong when sending data");
+        return -errno;
+    }
+    free(data);
+    return 0;
+}
+
+int connector_send_status(int sock, long status) {
+    int n_sent;
+    struct message* to_send = create_message(0, status, 0, "");
+    if((n_sent = connector_send_message(sock, to_send)) < 0){
+        free(to_send);
+        return n_sent;
+    }
+    free(to_send);
+    return 0;
 }
 
 struct message* send_and_recv_message(struct message* message_to_send, const char* server){
@@ -154,56 +242,24 @@ long connector_ping(const char* server){
     return send_and_recv_status(create_message(fnc_ping, 0, 0, ""), server);
 }
 
-void* reconnect_thread(void* data){
-    void** datatmp = (void**)data;
-    struct server * server = (struct server*)datatmp[0];
-    struct storage* storage = (struct storage*)datatmp[1];
-    int timeout = (int)(long)datatmp[2];
-    int is_swap = (int)(long)datatmp[3];
-    int i = 1;
-    while(1){
-        sleep(1);
-        int status = send_and_recv_status(create_message(fnc_ping, 0, 0, ""), server->name);
-        if(status == 1){
-            console.log("try No: %d SUCCESS", i);
-            console.log("connection restored with %s", server->name);
-            server->state = SERVER_STARTING;
-            return NULL;
-        }else{
-            if(i >= timeout){
-                server->state = SERVER_DOWN;
-                console.log("try No: %d FAILED", i);
-                console.log("timout exceeded, server is down");
-                if(!is_swap){
-                    datatmp[3] = (void*)(long)1;
-                    char tmp[20];
-                    strcpy(tmp, server->name);
-                    strcpy(server->name, storage->hotswap);
-                    strcpy(storage->hotswap, tmp);
-                    if(server->n_fds){
-                        free(server->fds);
-                        server->fds = NULL;
-                    }
-                    server->n_fds = 0;
-                    console.log("trying to connect with hotswap");
-                    return reconnect_thread(data);
-                }
-                console.log("couldn't connect to swap either");
-                free(data);
-                return NULL;
-            }
-            console.log("trying to reconnect in 1s, try No: %d FAILED", i++);
+Protocol new_protocol () {
+    Protocol p = malloc(sizeof(struct protocol));
+    struct protocol tmp = {
+        .open_server = connector_open_server_on,
+        .get_data = connector_get_data,
+        .get_message = connector_get_message,
+        .send_data = connector_send_data,
+        .send_message = connector_send_message,
+        .send_status = connector_send_status,
+        .request = {
+            .msg_msg = send_and_recv_message,
+            .msg_data = send_and_recv_data,
+            .data_msg = send_data_recv_message,
+            .msg_status = send_and_recv_status,
+            .data_status = send_data_recv_status,
+            .ping = connector_ping
         }
-    }
-}
-
-long connector_reconnect(struct server * server, struct storage* storage, int timeout){
-    pthread_t tid;
-    void** data = malloc(4 * sizeof(void*));
-    data[0] = (void*)server;
-    data[1] = (void*)storage;
-    data[2] = (void*)(long)timeout;
-    data[3] = (void*)(long)0;
-    pthread_create(&tid, NULL, reconnect_thread, data);
-    return 0;
+    };
+    memcpy(p, &tmp, sizeof(struct protocol));
+    return p;
 }

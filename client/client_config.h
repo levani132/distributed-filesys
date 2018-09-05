@@ -1,5 +1,6 @@
 #pragma once
 #include <linux/limits.h>
+#include "../protocol.h"
 
 #define SERVER_DOWN 0
 #define SERVER_UP 1
@@ -35,9 +36,10 @@ struct config {
     struct storage * storages;
 };
 
-void config_init(struct config * config, char * filename);
+void config_init(struct config * config, char * filename, Request req);
 void config_dest(struct config * config);
 
 struct fd_wrapper* fd_wrapper_create(long fd, long server_fd);
 int insert_fd_wrapper(struct server* server, struct fd_wrapper* fd_wrapper);
 long get_server_fd(struct server* server, long fd);
+long connector_reconnect(struct server * server, struct storage* storage, int timeout);

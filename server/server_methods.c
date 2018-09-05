@@ -8,9 +8,9 @@
 #include "server_methods.h"
 #include "../message.h"
 #include "../hasher.h"
-#include "../client/client_connector.h"
 
-Server this;
+FileManager this;
+void* send_and_recv_data(struct message* message_to_send, const char* server);
 
 void get_fullpath(char* fullpath, const char* path){
     strcpy(fullpath, this->root_path);
@@ -43,7 +43,6 @@ struct message* server_open (const char * path, int flags){
     hasher(fullpath, hash);
     hasher_get_for(fullpath, old_hash);
     int not_same = strcmp(hash, old_hash);
-    console.log("fd: %ld", fd);
     struct stat tmpstat;
     lstat(fullpath, &tmpstat);
     return create_ext_message(0, not_same ? ERRHASH : (long)fd, 0, tmpstat.st_mtime, 0, hash);
@@ -344,10 +343,10 @@ int server_restoreall(const char* path, const char* server, int first){
     return retval;
 }
 
-Server new_server(char* root_path){
-    this = malloc(sizeof(struct Server));
+FileManager new_server(char* root_path, void* (*req_msg_data)(struct message* message_to_send, const char* server)){
+    this = malloc(sizeof(struct FileManager));
     console.log("main this: %p", &this);
-    struct Server s = {
+    struct FileManager s = {
         .opendir = server_opendir,
         .open = server_open,
         .readdir = server_readdir,
@@ -366,6 +365,6 @@ Server new_server(char* root_path){
         .restoreall = server_restoreall,
     };
     strcpy(s.root_path, root_path);
-    memcpy(this, &s, sizeof(struct Server));
+    memcpy(this, &s, sizeof(struct FileManager));
     return this;
 }

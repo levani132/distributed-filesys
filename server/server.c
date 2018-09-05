@@ -12,12 +12,11 @@
 #include <linux/limits.h>
 #include <signal.h>
 
+#include "server_methods.h"
 #include "../logger.h"
 #include "../message.h"
 #include "../hasher.h"
-#include "server_connector.h"
-#include "server_methods.h"
-#include "../client/client_connector.h"
+#include "../protocol.h"
 
 #define UNUSED __attribute__((unused))
 
@@ -25,7 +24,8 @@ char ip[16];
 int port;
 char root_path[PATH_MAX];
 int listen_sock;
-Server server;
+FileManager file_manager;
+Protocol protocol;
 
 void cleanup(UNUSED int sig){
     console.log("cleaning up");
@@ -35,87 +35,34 @@ void cleanup(UNUSED int sig){
 int handle_message(int sock, struct message* mr){
     int retval;
     console.log("server is calling %s", function_name[mr->function_id]);
-    if(mr->function_id == fnc_ping){
-        retval = connector_send_status(sock, 1);
-    }else if(mr->function_id == fnc_opendir){
-        retval = connector_send_status(sock,
-            server->opendir(mr->small_data)
-        );
-    }else if(mr->function_id == fnc_open){
-        retval = connector_send_message(sock,
-            server->open(mr->small_data, mr->status)
-        );
-    }else if(mr->function_id == fnc_truncate){
-        retval = connector_send_status(sock,
-            server->truncate(mr->small_data, mr->offset)
-        );
-    }else if(mr->function_id == fnc_release){
-        retval = connector_send_status(sock,
-            close((int)mr->status)
-        );
-    }else if(mr->function_id == fnc_releasedir){
-        retval = connector_send_status(sock,
-            closedir((DIR *)(intptr_t)mr->status)
-        );
-    }else if(mr->function_id == fnc_readdir){
-        char * res = server->readdir(mr->status, mr->small_data);
-        int byte_count = ((int*)res)[((int*)res)[0]] + strlen(res + ((int*)res)[((int*)res)[0]]) + 1;
-        retval = connector_send_data(sock, res, byte_count);
-    }else if(mr->function_id == fnc_getattr){
-        retval = connector_send_data(sock, 
-            server->getattr(mr->small_data), sizeof(struct getattr_ans)
-        );
-    }else if(mr->function_id == fnc_read){
-        retval = connector_send_data(sock,
-            server->read(mr->status, mr->size, mr->offset), mr->size + 1
-        );
-    }else if(mr->function_id == fnc_write){
-        retval = connector_send_status(sock,
-            server->write(mr->small_data, mr->status,
-                connector_get_data(sock, mr->wait_for_message), mr->size, mr->offset
-            )
-        );
-    }else if(mr->function_id == fnc_utime){
-        retval = connector_send_status(sock,
-            server->utime(mr->small_data,
-                connector_get_data(sock, mr->wait_for_message)
-            )
-        );
-    }else if(mr->function_id == fnc_mknod){
-        retval = connector_send_status(sock,
-            server->mknod(mr->small_data, mr->mode, mr->dev)
-        );
-    }else if(mr->function_id == fnc_mkdir){
-        retval = connector_send_status(sock,
-            server->mkdir(mr->small_data, mr->mode)
-        );
-    }else if(mr->function_id == fnc_rename){
-        retval = connector_send_status(sock,
-            server->rename(mr->small_data,
-                connector_get_data(sock, mr->wait_for_message)
-            )
-        );
-    }else if(mr->function_id == fnc_unlink){
-        retval = connector_send_status(sock,
-            server->unlink(mr->small_data)
-        );
-    }else if(mr->function_id == fnc_rmdir){
-        retval = connector_send_status(sock,
-            server->rmdir(mr->small_data)
-        );
-    }else if(mr->function_id == fnc_restore){
-        retval = connector_send_status(sock, 
-            server->restore(mr->small_data, 
-                connector_get_data(sock, mr->wait_for_message)
-            )
-        );
-    }else if(mr->function_id == fnc_readall){
-        char* data = server->readall(mr->small_data);
-        retval = connector_send_data(sock, data, ((int*)data)[0] + sizeof(int));
-    }else if(mr->function_id == fnc_restoreall){
-        retval = connector_send_status(sock,
-            server->restoreall("/", mr->small_data, 1)
-        );
+    switch(mr->function_id){
+        case fnc_ping: retval = protocol->send_status(sock, 1); break;
+        case fnc_opendir: retval = protocol->send_status(sock, file_manager->opendir(mr->small_data)); break;
+        case fnc_open: retval = protocol->send_message(sock, file_manager->open(mr->small_data, mr->status)); break;
+        case fnc_truncate: retval = protocol->send_status(sock, file_manager->truncate(mr->small_data, mr->offset)); break;
+        case fnc_release: retval = protocol->send_status(sock, close((int)mr->status)); break;
+        case fnc_releasedir: retval = protocol->send_status(sock, closedir((DIR *)(intptr_t)mr->status)); break;
+        case fnc_readdir: {
+            char * res = file_manager->readdir(mr->status, mr->small_data);
+            retval = protocol->send_data(sock, res, ((int*)res)[((int*)res)[0]] + strlen(res + ((int*)res)[((int*)res)[0]]) + 1);
+            break;
+        }
+        case fnc_getattr: retval = protocol->send_data(sock, file_manager->getattr(mr->small_data), sizeof(struct getattr_ans)); break;
+        case fnc_read: retval = protocol->send_data(sock,file_manager->read(mr->status, mr->size, mr->offset), mr->size + 1); break;
+        case fnc_write: retval = protocol->send_status(sock, file_manager->write(mr->small_data, mr->status, protocol->get_data(sock, mr->wait_for_message), mr->size, mr->offset)); break;
+        case fnc_utime: retval = protocol->send_status(sock, file_manager->utime(mr->small_data, protocol->get_data(sock, mr->wait_for_message))); break;
+        case fnc_mknod: retval = protocol->send_status(sock, file_manager->mknod(mr->small_data, mr->mode, mr->dev)); break;
+        case fnc_mkdir: retval = protocol->send_status(sock, file_manager->mkdir(mr->small_data, mr->mode)); break;
+        case fnc_rename: retval = protocol->send_status(sock, file_manager->rename(mr->small_data, protocol->get_data(sock, mr->wait_for_message))); break;
+        case fnc_unlink: retval = protocol->send_status(sock, file_manager->unlink(mr->small_data)); break;
+        case fnc_rmdir: retval = protocol->send_status(sock, file_manager->rmdir(mr->small_data)); break;
+        case fnc_restore: retval = protocol->send_status(sock, file_manager->restore(mr->small_data, protocol->get_data(sock, mr->wait_for_message))); break;
+        case fnc_readall: {
+            char* data = file_manager->readall(mr->small_data);
+            retval = protocol->send_data(sock, data, ((int*)data)[0] + sizeof(int));
+            break;
+        }
+        case fnc_restoreall: retval = protocol->send_status(sock, file_manager->restoreall("/", mr->small_data, 1)); break;
     }
     return retval;
 }
@@ -135,14 +82,16 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     readargs(argv);
-    server = new_server(root_path);
-    listen_sock = connector_open_server_on(ip, port);
+    protocol = new_protocol();
+    file_manager = new_server(root_path, protocol->request.msg_data);
+    listen_sock = protocol->open_server(ip, port);
 	struct sockaddr_in client_address;
 	socklen_t client_address_len = 0;
 	while (1) {
 		console.log("--------------------------");
 		console.log("waiting for new connection");
 		int sock;
+
 		if ((sock = accept(listen_sock, (struct sockaddr *)&client_address, &client_address_len)) < 0) {
 			console.log("could not open a socket to accept data");
             console.log("%s %d", strerror(errno), errno);
@@ -150,7 +99,7 @@ int main(int argc, char* argv[]) {
 		}
 		console.log("client connected with ip address: %s", inet_ntoa(client_address.sin_addr));
         struct message* message_received;;
-        while ((message_received = connector_get_message(sock))) {
+        while ((message_received = protocol->get_message(sock))) {
             int status = handle_message(sock, message_received);
             if (status < 0) {
                 console.log("%s %d", strerror(-status), -status);

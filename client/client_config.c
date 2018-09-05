@@ -1,13 +1,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 #include <error.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "client_config.h"
-#include "client_connector.h"
 #include "../logger.h"
+#include "../message.h"
+#include "../protocol.h"
+
+Request request;
 
 int n_storages(FILE * file){
     int count = 0;
@@ -57,7 +62,7 @@ int parse_storage(struct storage * storage, struct config * config, FILE * file)
         while(server != NULL){
             storage->servers = realloc(storage->servers, (storage->n_servers + 1) * sizeof*storage->servers);
             strcpy(storage->servers[storage->n_servers].name, server);
-            storage->servers[storage->n_servers].state = connector_ping(server);
+            storage->servers[storage->n_servers].state = request->ping(server);
             storage->servers[storage->n_servers].n_fds = 0;
             storage->servers[storage->n_servers].fds = NULL;
             if(!storage->servers[storage->n_servers].state){
@@ -75,7 +80,8 @@ int parse_storage(struct storage * storage, struct config * config, FILE * file)
     }
 }
 
-void config_init(struct config * config, char * filename){
+void config_init(struct config * config, char * filename, Request req){
+    request = req;
     assert(config != NULL);
     assert(filename != NULL);
     console.log("config is initializing");
@@ -138,4 +144,58 @@ long get_server_fd(struct server* server, long fd){
         }
     }
     return -1;
+}
+
+void* reconnect_thread(void* data){
+    void** datatmp = (void**)data;
+    struct server * server = (struct server*)datatmp[0];
+    struct storage* storage = (struct storage*)datatmp[1];
+    int timeout = (int)(long)datatmp[2];
+    int is_swap = (int)(long)datatmp[3];
+    int i = 1;
+    while(1){
+        sleep(1);
+        int status = request->ping(server->name);
+        if(status == 1){
+            console.log("try No: %d SUCCESS", i);
+            console.log("connection restored with %s", server->name);
+            server->state = SERVER_STARTING;
+            return NULL;
+        }else{
+            if(i >= timeout){
+                server->state = SERVER_DOWN;
+                console.log("try No: %d FAILED", i);
+                console.log("timout exceeded, server is down");
+                if(!is_swap){
+                    datatmp[3] = (void*)(long)1;
+                    char tmp[20];
+                    strcpy(tmp, server->name);
+                    strcpy(server->name, storage->hotswap);
+                    strcpy(storage->hotswap, tmp);
+                    if(server->n_fds){
+                        free(server->fds);
+                        server->fds = NULL;
+                    }
+                    server->n_fds = 0;
+                    console.log("trying to connect with hotswap");
+                    return reconnect_thread(data);
+                }
+                console.log("couldn't connect to swap either");
+                free(data);
+                return NULL;
+            }
+            console.log("trying to reconnect in 1s, try No: %d FAILED", i++);
+        }
+    }
+}
+
+long connector_reconnect(struct server * server, struct storage* storage, int timeout){
+    pthread_t tid;
+    void** data = malloc(4 * sizeof(void*));
+    data[0] = (void*)server;
+    data[1] = (void*)storage;
+    data[2] = (void*)(long)timeout;
+    data[3] = (void*)(long)0;
+    pthread_create(&tid, NULL, reconnect_thread, data);
+    return 0;
 }

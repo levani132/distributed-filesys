@@ -3,11 +3,8 @@
 #include <utime.h>
 #include <linux/limits.h>
 
-#define F(f_) ({f_ _;})
-
-typedef struct Server {
+typedef struct FileManager {
     char root_path[PATH_MAX];
-
     intptr_t (*opendir) (const char * path);
     struct message* (*open) (const char * path, int flags);
     char* (*readdir) (intptr_t dp, char* path);
@@ -25,6 +22,6 @@ typedef struct Server {
     char* (*readall)(const char* path);
     int (*restoreall)(const char* path, const char* server, int first);
     void (*log)(const char* msg);
-} *Server;
+} *FileManager;
 
-Server new_server(char* root_path);
+FileManager new_server(char* root_path, void* (*req_msg_data)(struct message* message_to_send, const char* server));

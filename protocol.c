@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include "logger.h"
 #include "message.h"
@@ -31,6 +32,11 @@ int connector_open_server_on(const char * ip, int port){
 		console.log("could not bind socket");
 		return 1;
 	}
+
+    ;
+    if(fcntl (listen_sock, F_SETFL, fcntl (listen_sock, F_GETFL, 0) | O_NONBLOCK) < 0){
+        console.log("could not make socket nonblocking");
+    }
 
 	int wait_size = 16;
 	if (listen(listen_sock, wait_size) < 0) {

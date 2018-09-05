@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <linux/limits.h>
 #include <signal.h>
+#include <sys/epoll.h>
 
 #include "server_methods.h"
 #include "../logger.h"
@@ -19,6 +20,7 @@
 #include "../protocol.h"
 
 #define UNUSED __attribute__((unused))
+#define MAXEVENTS 128
 
 char ip[16];
 int port;
@@ -34,7 +36,7 @@ void cleanup(UNUSED int sig){
 
 int handle_message(int sock, struct message* mr){
     int retval;
-    console.log("server is calling %s", function_name[mr->function_id]);
+    console.log("client is calling %s", function_name[mr->function_id]);
     switch(mr->function_id){
         case fnc_ping: retval = protocol->send_status(sock, 1); break;
         case fnc_opendir: retval = protocol->send_status(sock, file_manager->opendir(mr->small_data)); break;
@@ -77,6 +79,10 @@ int readargs(char* argv[]){
 }
 
 int main(int argc, char* argv[]) {
+    int epfd;
+    struct epoll_event event;
+    struct epoll_event *events;
+
     if(argc < 4){
         console.log("specify at least three arguments");
         return -1;
@@ -85,30 +91,62 @@ int main(int argc, char* argv[]) {
     protocol = new_protocol();
     file_manager = new_server(root_path, protocol->request.msg_data);
     listen_sock = protocol->open_server(ip, port);
+
+    // Epoll
+    epfd = epoll_create1 (0);
+    event.data.fd = listen_sock;
+    event.events = EPOLLIN | EPOLLET; 
+    if(epoll_ctl(epfd, EPOLL_CTL_ADD, listen_sock, &event) < 0){
+        console.log("adding listen_sock failed");
+    }
+    events = malloc(MAXEVENTS * sizeof*events);
+
 	struct sockaddr_in client_address;
 	socklen_t client_address_len = 0;
 	while (1) {
 		console.log("--------------------------");
-		console.log("waiting for new connection");
-		int sock;
-
-		if ((sock = accept(listen_sock, (struct sockaddr *)&client_address, &client_address_len)) < 0) {
-			console.log("could not open a socket to accept data");
-            console.log("%s %d", strerror(errno), errno);
-			return 1;
-		}
-		console.log("client connected with ip address: %s", inet_ntoa(client_address.sin_addr));
-        struct message* message_received;;
-        while ((message_received = protocol->get_message(sock))) {
-            int status = handle_message(sock, message_received);
-            if (status < 0) {
-                console.log("%s %d", strerror(-status), -status);
+		console.log("waiting for new event");
+		int sock, n, i;
+        n = epoll_wait(epfd, events, MAXEVENTS, -1);
+        for(i = 0; i < n; i++){
+            if(events[i].events & EPOLLERR || 
+                events[i].events & EPOLLHUP || 
+                !(events[i].events & EPOLLIN)){
+                console.log("error taking event from epoll");
+                close(events[i].data.fd);
+                continue;
             }
-            free(message_received);
+            if(listen_sock == events[i].data.fd){
+                if ((sock = accept(listen_sock, (struct sockaddr *)&client_address, &client_address_len)) < 0) {
+                    console.log("could not open a socket to accept data");
+                    console.log("%s %d", strerror(errno), errno);
+                    return 1;
+                }
+                console.log("client connected with ip address: %s", inet_ntoa(client_address.sin_addr));
+                fcntl (sock, F_SETFL, fcntl (sock, F_GETFL, 0) | O_NONBLOCK);
+                event.data.fd = sock;
+                event.events = EPOLLIN | EPOLLET;
+                if(epoll_ctl (epfd, EPOLL_CTL_ADD, sock, &event) < 0){
+                    console.log("adding sock failed");
+                }
+            }
+            else{
+
+                sock = events[i].data.fd;
+                struct message* message_received;;
+                while ((message_received = protocol->get_message(sock))) {
+                    int status = handle_message(sock, message_received);
+                    if (status < 0) {
+                        console.log("%s %d", strerror(-status), -status);
+                    }
+                    free(message_received);
+                }
+                close(sock);
+                console.log("client connection closed");
+            }
         }
-		close(sock);
-        console.log("sock closed");
 	}
+    free(events);
 	close(listen_sock);
     return 0;
 }

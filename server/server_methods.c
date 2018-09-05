@@ -89,7 +89,6 @@ char* server_readdir (intptr_t dp, char* path){
 }
 
 struct getattr_ans* server_getattr(const char * path) {
-    console.log("vaa %s", this->root_path);
     char fullpath[PATH_MAX];
     struct getattr_ans* ans = malloc(sizeof*ans);
     memset(ans, 0, sizeof*ans);
@@ -180,7 +179,6 @@ int server_write(const char* path, int fd, void* data, size_t size, off_t offset
     int retval = 0;
     char fullpath[PATH_MAX];
     get_fullpath(fullpath, path);
-    console.log("writing %s %ld %s %d %d", fullpath, fd, data, size, offset);
     if((retval = pwrite(fd, data, size, offset)) < 0){
         return -errno;
     }
@@ -211,9 +209,7 @@ int mkdir_recursive(char* fullpath){
 
 int server_restore(const char* path, const char* server){
     int retval;
-    console.log("starting restoring %s from %s", path, server);
     char * data_to_restore = send_and_recv_data(create_message(fnc_readall, 0, 0, path), server);
-    console.log("%s data_to_restore: %s", path, data_to_restore + sizeof(int));
     char fullpath[PATH_MAX];
     get_fullpath(fullpath, path);
     int fd = open(fullpath, O_WRONLY | O_CREAT | O_TRUNC, 0777);
@@ -242,7 +238,6 @@ char* server_readall(const char* path){
     ((int*)file_content)[0] = 0;
     get_fullpath(fullpath, path);
     FILE* file = fopen(fullpath, "r");
-    console.log("%s", fullpath);
     if(file == NULL){
         LOGGER_ERROR("%s %d", strerror(errno), errno);
         return file_content;
@@ -255,7 +250,6 @@ char* server_readall(const char* path){
         LOGGER_ERROR("%s %d", strerror(errno), errno);
     }
     rewind(file);
-    console.log("fsize: %d", fsize);
     file_content = realloc(file_content, fsize + sizeof(int));
     if(file_content == NULL){
         LOGGER_ERROR("%s %d", strerror(errno), errno);
@@ -265,7 +259,6 @@ char* server_readall(const char* path){
         LOGGER_ERROR("%s %d", strerror(errno), errno);
     }
     //fclose(file);
-    console.log("returning %s", file_content + sizeof(int));
     return file_content;
 }
 
@@ -307,7 +300,6 @@ int server_restoreall(const char* path, const char* server, int first){
         LOGGER_ERROR("%s %d", strerror(errno), errno);
     }
     int retval = 0;
-    console.log("reading directory %s from %s", path, server);
     char* entries = (char*)send_and_recv_data(create_message(fnc_readdir, -1, 0, path), server);
     if((long)entries == ERRCONNECTION){
         free(entries);
@@ -320,7 +312,6 @@ int server_restoreall(const char* path, const char* server, int first){
         console.log("couldn't read dir from server %s", server);
         return -ENOMEM;
     }
-    console.log("read directory from %s success, count %d", server, count);
     int j = 0; for(; j < count; j++){
         char child[PATH_MAX];
         char fullchild[PATH_MAX];
@@ -329,7 +320,6 @@ int server_restoreall(const char* path, const char* server, int first){
             continue;
         strcat(child, (entries + offsets[j]));
         get_fullpath(fullchild, child);
-        console.log(fullchild);
         struct getattr_ans* ans = (struct getattr_ans*)send_and_recv_data(create_message(fnc_getattr, 0, 0, child), server);
         if(S_ISREG(ans->stat.st_mode)){
             this->restore(child, server);
@@ -345,7 +335,6 @@ int server_restoreall(const char* path, const char* server, int first){
 
 FileManager new_server(char* root_path, void* (*req_msg_data)(struct message* message_to_send, const char* server)){
     this = malloc(sizeof(struct FileManager));
-    console.log("main this: %p", &this);
     struct FileManager s = {
         .opendir = server_opendir,
         .open = server_open,

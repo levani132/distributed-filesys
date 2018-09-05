@@ -165,15 +165,15 @@ void* reconnect_thread(void* data){
         sleep(1);
         int status = send_and_recv_status(create_message(fnc_ping, 0, 0, ""), server->name);
         if(status == 1){
-            loggerf("try No: %d SUCCESS", i);
-            loggerf("connection restored with %s", server->name);
+            console.log("try No: %d SUCCESS", i);
+            console.log("connection restored with %s", server->name);
             server->state = SERVER_STARTING;
             return NULL;
         }else{
             if(i >= timeout){
                 server->state = SERVER_DOWN;
-                loggerf("try No: %d FAILED", i);
-                loggerf("timout exceeded, server is down");
+                console.log("try No: %d FAILED", i);
+                console.log("timout exceeded, server is down");
                 if(!is_swap){
                     datatmp[3] = (void*)(long)1;
                     char tmp[20];
@@ -185,14 +185,14 @@ void* reconnect_thread(void* data){
                         server->fds = NULL;
                     }
                     server->n_fds = 0;
-                    loggerf("trying to connect with hotswap");
+                    console.log("trying to connect with hotswap");
                     return reconnect_thread(data);
                 }
-                loggerf("couldn't connect to swap either");
+                console.log("couldn't connect to swap either");
                 free(data);
                 return NULL;
             }
-            loggerf("trying to reconnect in 1s, try No: %d FAILED", i++);
+            console.log("trying to reconnect in 1s, try No: %d FAILED", i++);
         }
     }
 }

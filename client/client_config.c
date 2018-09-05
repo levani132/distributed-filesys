@@ -33,10 +33,10 @@ void parse_config(struct config * config, FILE * file){
             errorlog_tmp, &config->cache_size, cache_replacement_tmp, &config->timeout));
     config->errorlog = strdup(errorlog_tmp);
     config->cache_replacement = strdup(cache_replacement_tmp);
-    loggerf("parse_config: errorlog - %s", config->errorlog);
-    loggerf("parse_config: cache_size - %d", config->cache_size);
-    loggerf("parse_config: cache_replacement - %s", config->cache_replacement);
-    loggerf("parse_config: timeout - %d", config->timeout);
+    console.log("parse_config: errorlog - %s", config->errorlog);
+    console.log("parse_config: cache_size - %d", config->cache_size);
+    console.log("parse_config: cache_replacement - %s", config->cache_replacement);
+    console.log("parse_config: timeout - %d", config->timeout);
 }
 
 int parse_storage(struct storage * storage, struct config * config, FILE * file){
@@ -47,10 +47,10 @@ int parse_storage(struct storage * storage, struct config * config, FILE * file)
         storage->diskname = strdup(diskname_tmp);
         storage->hotswap = strdup(hotswap_tmp);
         servers_tmp[strlen(servers_tmp) - 1] = '\0';
-        loggerf("parse_storage: diskname - %s", storage->diskname);
-        loggerf("parse_storage: mountpoint - %s", storage->mountpoint);
-        loggerf("parse_storage: raid - %d", storage->raid);
-        loggerf("parse_storage: hotswap - %s", storage->hotswap);
+        console.log("parse_storage: diskname - %s", storage->diskname);
+        console.log("parse_storage: mountpoint - %s", storage->mountpoint);
+        console.log("parse_storage: raid - %d", storage->raid);
+        console.log("parse_storage: hotswap - %s", storage->hotswap);
         char * server = strtok(servers_tmp, ", ");
         storage->n_servers = 0;
         storage->servers = malloc(0);
@@ -61,11 +61,11 @@ int parse_storage(struct storage * storage, struct config * config, FILE * file)
             storage->servers[storage->n_servers].n_fds = 0;
             storage->servers[storage->n_servers].fds = NULL;
             if(!storage->servers[storage->n_servers].state){
-                loggerf("parse_storage: server - %s couldn't be parsed",  storage->servers[storage->n_servers].name);
+                console.log("parse_storage: server - %s couldn't be parsed",  storage->servers[storage->n_servers].name);
                 connector_reconnect(&storage->servers[storage->n_servers], storage, config->timeout);
             }
             server = strtok(NULL, ", ");
-            loggerf("parse_storage: server - %s", storage->servers[storage->n_servers].name);
+            console.log("parse_storage: server - %s", storage->servers[storage->n_servers].name);
             storage->n_servers++;
         }
         assert(storage->n_servers > 0);
@@ -78,19 +78,19 @@ int parse_storage(struct storage * storage, struct config * config, FILE * file)
 void config_init(struct config * config, char * filename){
     assert(config != NULL);
     assert(filename != NULL);
-    loggerf("config is initializing");
+    console.log("config is initializing");
     FILE* file = fopen(filename, "r");
     config->n_storages = n_storages(file);
     parse_config(config, file);
     FILE* error_file = fopen(config->errorlog, "w");
     assert(file != NULL);
-    loggerf("from now on %s will be used for logs (see next messages there)", config->errorlog);
-    logger_set_file(error_file);
-    loggerf("------------- LOGS -----------------");
+    console.log("from now on %s will be used for logs (see next messages there)", config->errorlog);
+    console.set_file(error_file);
+    console.log("------------- LOGS -----------------");
     config->storages = malloc(config->n_storages * sizeof(struct storage));
     memset(config->storages, 0, sizeof * config->storages);
     int i = 0;
-    loggerf("config->n_storages: %d", config->n_storages);
+    console.log("config->n_storages: %d", config->n_storages);
     while(parse_storage(&config->storages[i++], config, file));
     fclose(file);
     assert(config->n_storages > 0);

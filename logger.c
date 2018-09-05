@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "logger.h"
+
 FILE * file = NULL;
 
 void logger(const char * storage_name, const char * server_addr, const char * fmt, ...){
@@ -63,6 +65,14 @@ void logger_unset_file(){
     fclose(file);
     file = NULL;
 }
+
+struct console console = {
+    .log = loggerf,
+    .logger = logger,
+    .logger_error = logger_error,
+    .set_file = logger_set_file,
+    .unset_file = logger_unset_file
+};
 
 void memswap(void * left, void * right, size_t size){
     void * tmp = malloc(size);

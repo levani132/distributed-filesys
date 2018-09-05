@@ -29,7 +29,7 @@ char* function_name[] = {
 struct message* create_message(int function_id, long status, int wait_for_message, const char * small_data){
     struct message* message = malloc(sizeof(struct message));
     if(message == NULL){
-        loggerf("malloc failed");
+        console.log("malloc failed");
     }
     memset(message, 0, sizeof(struct message));
     message->function_id = function_id;

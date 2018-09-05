@@ -19,19 +19,19 @@ int connector_open_server_on(const char * ip, int port){
 
 	int listen_sock;
 	if ((listen_sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-		loggerf("could not create listen socket");
+		console.log("could not create listen socket");
 		return 1;
 	}
 
 	if ((bind(listen_sock, (struct sockaddr *)&server_address,
 	          sizeof(server_address))) < 0) {
-		loggerf("could not bind socket");
+		console.log("could not bind socket");
 		return 1;
 	}
 
 	int wait_size = 16;
 	if (listen(listen_sock, wait_size) < 0) {
-		loggerf("could not open socket for listening");
+		console.log("could not open socket for listening");
 		return 1;
 	}
     return listen_sock;
@@ -45,6 +45,7 @@ struct message* connector_get_message(int sock){
     if ((n = recv(sock, message, sizeof(struct message), 0)) > 0) {
         return message;
     }else{
+        free(message);
         return NULL;
     }
 }
@@ -64,7 +65,7 @@ void* connector_get_data(int sock, int size){
 int connector_send_message(int sock, struct message* message){
     int n_sent;
     if((n_sent = send(sock, message, sizeof*message, 0)) != sizeof*message){
-        loggerf("something went wrong when sending message");
+        console.log("something went wrong when sending message");
         return -errno;
     }
     return n_sent;
@@ -79,7 +80,7 @@ int connector_send_data(int sock, void* data, int size){
     }
     free(message);
     if(size && (n_sent = send(sock, data, size, 0)) != size){
-        loggerf("something went wrong when sending data");
+        console.log("something went wrong when sending data");
         return -errno;
     }
     free(data);

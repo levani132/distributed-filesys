@@ -29,12 +29,12 @@ void log_end(int i, const char * fnc){
 }
 
 void shut_down () {
-    loggerf("fuse is unmounting and shutting down");
-    loggerf("------------------------------------");
+    console.log("fuse is unmounting and shutting down");
+    console.log("------------------------------------");
     fuse_unmount(STORAGE.mountpoint, NULL);
     umount(STORAGE.mountpoint);
     config_dest(&config);
-    logger_unset_file();
+    console.unset_file();
     exit(0);
 }
 
@@ -279,14 +279,15 @@ int client_open(const char *path, struct fuse_file_info *fi)
                 int ind = ((STORAGE.n_servers + i - 1) % STORAGE.n_servers);
                 int size = strlen(STORAGE.servers[ind].name) + 1;
                 int i2 = i;
-                if(old_hash && msgs[i - 1]->size < msgs[i]->size)
-                    memswap(&i2, &ind, sizeof(int));
-                if(send_data_recv_status(create_message(fnc_restore, 0, size, path), STORAGE.servers[ind].name, size, STORAGE.servers[i2].name) < 0)
+                if(dp != ERRHASH && old_hash && msgs[i - 1]->size < msgs[i]->size)
+                    memswap(&i, &ind, sizeof(int));
+                if(send_data_recv_status(create_message(fnc_restore, 0, size, path), STORAGE.servers[ind].name, size, STORAGE.servers[i].name) < 0)
                     LOGGER("couldn't restore data from %s", STORAGE.servers[ind].name);
                 else{
                     LOGGER("restored data from %s", STORAGE.servers[ind].name);
-                    i = i2 - 1;
+                    i2 = i - 1;
                 }
+                i = i2;
                 continue;
             }
             LOGGER_ERROR("%s %d", strerror(-dp), -dp);
@@ -436,7 +437,7 @@ int client_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t of
         int count = offsets[0];
         offsets++;
         if(count < 0){
-            logger(STORAGE.diskname, STORAGE.servers[i].name, "couldn't read from server");
+            console.logger(STORAGE.diskname, STORAGE.servers[i].name, "couldn't read from server");
             return -ENOMEM;
         }
         int j = 0; for(; j < count; j++){
@@ -493,7 +494,7 @@ struct fuse_operations client_operations = {
 
 int main (int argc, char *argv[]) {
     if(argc < 2){
-        loggerf("specify config file");
+        console.log("specify config file");
         return -1;
     }
     config_init(&config, argv[1]);
@@ -506,7 +507,7 @@ int main (int argc, char *argv[]) {
             argv_i[0] = argv[0];
             argv_i[1] = config.storages[i].mountpoint;
             argv_i[2] = strdup("-s");
-            loggerf("mounting %s", config.storages[i].mountpoint);
+            console.log("mounting %s", config.storages[i].mountpoint);
             res = fuse_main(3, argv_i, &client_operations, &config.storages[i]);
             break;
         }

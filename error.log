@@ -1376,3 +1376,5 @@
 [Sat Sep  8 01:17:48 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector on /
 [Sat Sep  8 01:17:50 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector on /
 [Sat Sep  8 01:17:50 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector on /
+[Sat Sep  8 01:22:21 2018] STORAGE1 127.0.0.1:10001 starting [client_getattr] from connector on /
+[Sat Sep  8 01:22:21 2018] STORAGE1 127.0.0.1:10001 ended    [client_getattr] from connector on /

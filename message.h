@@ -23,11 +23,6 @@ struct getattr_ans {
     struct stat stat;
 };
 
-struct server_open_ans {
-    int retval;
-
-};
-
 enum function_id {
     fnc_nothing,
     fnc_ping,

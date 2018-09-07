@@ -16,7 +16,6 @@
 #include "server_methods.h"
 #include "../logger.h"
 #include "../message.h"
-#include "../hasher.h"
 #include "../protocol.h"
 
 #define UNUSED __attribute__((unused))
@@ -46,7 +45,7 @@ int handle_message(int sock, struct message* mr){
         case fnc_releasedir: retval = protocol->send_status(sock, closedir((DIR *)(intptr_t)mr->status)); break;
         case fnc_readdir: {
             char * res = file_manager->readdir(mr->status, mr->small_data);
-            retval = protocol->send_data(sock, res, ((int*)res)[((int*)res)[0]] + strlen(res + ((int*)res)[((int*)res)[0]]) + 1);
+            retval = protocol->send_data(sock, res, ((int*)res)[((int*)res)[0]] ? ((int*)res)[((int*)res)[0]] + strlen(res + ((int*)res)[((int*)res)[0]]) + 1 : sizeof(int) + sizeof(char));
             break;
         }
         case fnc_getattr: retval = protocol->send_data(sock, file_manager->getattr(mr->small_data), sizeof(struct getattr_ans)); break;

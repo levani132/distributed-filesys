@@ -4,8 +4,8 @@
 #include <openssl/md5.h>
 #include <sys/xattr.h>
 
-#include "logger.h"
-#include "hasher.h"
+#include "../logger.h"
+#include "server_hasher.h"
 
 int hasher(const char *path, char* hash){
     FILE *file = fopen (path, "rb");

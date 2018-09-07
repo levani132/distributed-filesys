@@ -7,7 +7,7 @@
 #include "../logger.h"
 #include "server_methods.h"
 #include "../message.h"
-#include "../hasher.h"
+#include "server_hasher.h"
 
 FileManager this;
 void* send_and_recv_data(struct message* message_to_send, const char* server);
@@ -62,7 +62,10 @@ char* server_readdir (intptr_t dp, char* path){
     }
     if(count == 0){
         LOGGER_ERROR("%s %d", strerror(errno), errno);
-        return NULL;
+        char * data = malloc(sizeof(int) + sizeof(char));
+        ((int*)data)[0] = 0;
+        data[4] = '\0';
+        return data;
     }
     rewinddir((DIR*)dp);
     int offset = (count + 1) * sizeof(int);
@@ -281,9 +284,10 @@ int empty_directory(const char *path){
                 struct stat statbuf;
                 snprintf(buf, len, "%s/%s", path, dirent->d_name);
                 if (!stat(buf, &statbuf)){
-                    if (S_ISDIR(statbuf.st_mode))
+                    if (S_ISDIR(statbuf.st_mode)){
                         r2 = empty_directory(buf);
-                    else
+                        r2 = rmdir(buf);
+                    }else
                         r2 = unlink(buf);
                 }
                 free(buf);
@@ -324,10 +328,12 @@ int server_restoreall(const char* path, const char* server, int first){
         get_fullpath(fullchild, child);
         struct getattr_ans* ans = (struct getattr_ans*)send_and_recv_data(create_message(fnc_getattr, 0, 0, child), server);
         if(S_ISREG(ans->stat.st_mode)){
-            this->restore(child, server);
+            retval = this->restore(child, server);
         }else if(S_ISDIR(ans->stat.st_mode)){
             strcat(child, "/");
-            this->restoreall(child, server, 0);
+            if((retval = this->restoreall(child, server, 0)) < 0){
+                LOGGER_ERROR("%s %d", strerror(-retval), -retval);
+            }
         }
         free(ans);
     }

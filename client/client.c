@@ -416,12 +416,18 @@ int client_opendir(const char *path, struct fuse_file_info *fi)
         intptr_t dp_server = request->msg_status(message_to_send, STORAGE.servers[i].name);
         insert_fd_wrapper(&STORAGE.servers[i], fd_wrapper_create(dp, dp_server));
         log_end(path, i, "client_opendir");
-        if(dp == ERRCONNECTION){
+        if(dp_server == ERRCONNECTION){
             reconnect(i--);
         }
-        else if(dp < 0){
-            LOGGER_ERROR("%s %d", strerror(-dp), -dp);
-            return -dp;
+        else if (dp_server < 0) {
+            if(i > 0){
+                if(restoreall(&i)){
+                    i--;
+                    continue;
+                }
+            }
+            LOGGER_ERROR("%s %d", strerror(dp_server), dp_server);
+            return dp_server;
         }
     }
     return 0;

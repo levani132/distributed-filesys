@@ -12,6 +12,7 @@
 #include <sys/mount.h>
 
 #include "client_config.h"
+#include "client_cache.h"
 #include "../logger.h"
 #include "../message.h"
 #include "../protocol.h"
@@ -20,13 +21,14 @@
 struct config config;
 long fd_counter = 0;
 Request request;
+Cache cache;
 
-void log_start(int i, const char * fnc){
-    LOGGER("starting [%s] from connector", fnc);
+void log_start(const char* path, int i, const char * fnc){
+    LOGGER("starting [%s] from connector on %s", fnc, path);
 }
 
-void log_end(int i, const char * fnc){
-    LOGGER("ended    [%s] from connector", fnc);
+void log_end(const char* path, int i, const char * fnc){
+    LOGGER("ended    [%s] from connector on %s", fnc, path);
 }
 
 void shut_down () {
@@ -40,7 +42,7 @@ void shut_down () {
 }
 
 void reconnect(int i){
-    LOGGER("server down will try to reconnect");
+    LOGGER("server down, will try to reconnect");
     STORAGE.servers[i].state = SERVER_DOWN;
     int i2 = i;
     while(i2 != STORAGE.n_servers - 1 && STORAGE.servers[i + 1].state){
@@ -85,9 +87,9 @@ int client_getattr(const char *path, struct stat *statbuf)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_getattr");
+        log_start(path, i, "client_getattr");
         struct getattr_ans* data = (struct getattr_ans*)request->msg_data(create_message(fnc_getattr, 0, 0, path), STORAGE.servers[i].name);
-        log_end(i, "client_getattr");
+        log_end(path, i, "client_getattr");
         if((long)data == ERRCONNECTION){
             reconnect(i--);
             continue;
@@ -111,9 +113,9 @@ int client_mknod(const char *path, mode_t mode, dev_t dev)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "connector_mknod");
+        log_start(path, i, "client_mknod");
         retval = request->msg_status(create_mk_message(fnc_mknod, mode, dev, path), STORAGE.servers[i].name);
-        log_end(i, "connector_mknod");
+        log_end(path, i, "client_mknod");
         if(retval == ERRCONNECTION){
             reconnect(i--);
         }
@@ -132,9 +134,9 @@ int client_mkdir(const char *path, mode_t mode)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "connector_mkdir");
+        log_start(path, i, "client_mkdir");
         retval = request->msg_status(create_mk_message(fnc_mkdir, mode, 0, path), STORAGE.servers[i].name);
-        log_end(i, "connector_mkdir");
+        log_end(path, i, "client_mkdir");
         if(retval == ERRCONNECTION){
             reconnect(i--);
         }
@@ -153,9 +155,9 @@ int client_unlink(const char *path)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "connector_unlink");
+        log_start(path, i, "client_unlink");
         retval = request->msg_status(create_ext_message(fnc_unlink, 0, 0, 0, 0, path), STORAGE.servers[i].name);
-        log_end(i, "connector_unlink");
+        log_end(path, i, "client_unlink");
         if(retval == ERRCONNECTION){
             reconnect(i--);
         }
@@ -174,9 +176,9 @@ int client_rmdir(const char *path)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "connector_rmdir");
+        log_start(path, i, "client_rmdir");
         retval = request->msg_status(create_ext_message(fnc_rmdir, 0, 0, 0, 0, path), STORAGE.servers[i].name);
-        log_end(i, "connector_rmdir");
+        log_end(path, i, "client_rmdir");
         if(retval == ERRCONNECTION){
             reconnect(i--);
         }
@@ -196,12 +198,18 @@ int client_rename(const char *path, const char *newpath)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_rename");
-        retval = request->data_status(create_message(fnc_rename, 0, 0, path), newpath, strlen(newpath) + 1, STORAGE.servers[i].name);
-        log_end(i, "client_rename");
+        log_start(path, i, "client_rename");
+        char* newpath_i = malloc(strlen(newpath) + 1);
+        strcpy(newpath_i, newpath);
+        retval = request->data_status(create_message(fnc_rename, 0, 0, path), newpath_i, strlen(newpath) + 1, STORAGE.servers[i].name);
+        free(newpath_i);
+        log_end(path, i, "client_rename");
         if(retval == ERRCONNECTION){
             reconnect(i--);
         }
+    }
+    if(retval >= 0){
+        cache->rename(path, newpath);
     }
     return retval;
 }
@@ -217,9 +225,9 @@ int client_truncate(const char *path, off_t newsize)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_truncate");
+        log_start(path, i, "client_truncate");
         retval = request->msg_status(create_ext_message(fnc_truncate, 0, 0, 0, newsize, path), STORAGE.servers[i].name);
-        log_end(i, "client_truncate");
+        log_end(path, i, "client_truncate");
         if(retval == ERRCONNECTION){
             reconnect(i--);
         }
@@ -238,9 +246,9 @@ int client_utime(const char *path, struct utimbuf *ubuf)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_utime");
+        log_start(path, i, "client_utime");
         retval = request->data_status(create_message(fnc_utime, 0, sizeof*ubuf, path), (const char*)ubuf, sizeof*ubuf, STORAGE.servers[i].name);
-        log_end(i, "client_utime");
+        log_end(path, i, "client_utime");
         if(retval == ERRCONNECTION){
             reconnect(i--);
         }
@@ -263,14 +271,14 @@ int client_open(const char *path, struct fuse_file_info *fi)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_open");
+        log_start(path, i, "client_open");
         struct message* to_send = create_message(fnc_open, fi->flags, 0, path);
         struct message* to_receive = request->msg_msg(to_send, STORAGE.servers[i].name);
         long dp = to_receive->status;
         msgs[i] = to_receive;
         insert_fd_wrapper(&STORAGE.servers[i], fd_wrapper_create(fi->fh, dp));
         int old_hash = i > 0 && strcmp(msgs[i - 1]->small_data, msgs[i]->small_data);
-        log_end(i, "client_open");
+        log_end(path, i, "client_open");
         if(dp < 0 || old_hash){
             if(dp == ERRCONNECTION){
                 reconnect(i--);
@@ -309,12 +317,16 @@ int client_read(const char *path, char *buf, size_t size, off_t offset, struct f
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_read");
         long fd = get_server_fd(&STORAGE.servers[i], fi->fh);
         if(fd == -1)
             return EBADF;
-        char * server_buf = (char*)request->msg_data(create_ext_message(fnc_read, fd, 0, size, offset, ""), STORAGE.servers[i].name);
-        log_end(i, "client_read");
+        char * server_buf = cache->read(path, size, offset);
+        if(!server_buf){
+            log_start(path, i, "client_read");
+            server_buf = (char*)request->msg_data(create_ext_message(fnc_read, fd, 0, size, offset, ""), STORAGE.servers[i].name);
+            log_end(path, i, "client_read");
+            cache->write(path, server_buf, size, offset);
+        }
         if((long)server_buf == ERRCONNECTION){
             reconnect(i--);
             continue;
@@ -340,21 +352,23 @@ int client_write(const char *path, const char *buf, size_t size, off_t offset,
         long fd = get_server_fd(&STORAGE.servers[i], fi->fh);
         if(fd == -1)
             return EBADF;
-        log_start(i, "client_write");
-        res = request->data_status(
+        log_start(path, i, "client_write");
+        int res_i = request->data_status(
             create_ext_message(fnc_write, fd, size, size, offset, path),
             buf, size, STORAGE.servers[i].name
         );
-        log_end(i, "client_write");
-        if(res < 0){
-            if(res == ERRCONNECTION){
+        res = i == 0 ? res_i : res;
+        log_end(path, i, "client_write");
+        if(res_i < 0){
+            if(res_i == ERRCONNECTION){
                 reconnect(i--);
                 continue;
             }
-            LOGGER_ERROR("%s %d", strerror(errno), errno);
-            res = -errno;
+            LOGGER_ERROR("%s %s %s %d", STORAGE.diskname, STORAGE.servers[i].name, strerror(-res_i), -res_i);
         }
     }
+    if(res >= 0)
+        cache->write(path, buf, size, offset);
     return res;
 }
 
@@ -370,12 +384,12 @@ int client_release(const char *path, struct fuse_file_info *fi)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_release");
+        log_start(path, i, "client_release");
         long fd = get_server_fd(&STORAGE.servers[i], fi->fh);
         if(fd == -1)
             return EBADF;
         res = request->msg_status(create_message(fnc_release, fd, 0, ""), STORAGE.servers[i].name);
-        log_end(i, "client_release");
+        log_end(path, i, "client_release");
         if(res == ERRCONNECTION){
             reconnect(i--);
         }
@@ -397,11 +411,11 @@ int client_opendir(const char *path, struct fuse_file_info *fi)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_opendir");
+        log_start(path, i, "client_opendir");
         struct message* message_to_send = create_message(fnc_opendir, 0, 0, path);
         intptr_t dp_server = request->msg_status(message_to_send, STORAGE.servers[i].name);
         insert_fd_wrapper(&STORAGE.servers[i], fd_wrapper_create(dp, dp_server));
-        log_end(i, "client_opendir");
+        log_end(path, i, "client_opendir");
         if(dp == ERRCONNECTION){
             reconnect(i--);
         }
@@ -422,12 +436,12 @@ int client_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t of
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_readdir");
+        log_start(path, i, "client_readdir");
         long fd = get_server_fd(&STORAGE.servers[i], fi->fh);
         if(fd == -1)
             return EBADF;
         char* entries = (char*)request->msg_data(create_message(fnc_readdir, fd, 0, ""), STORAGE.servers[i].name);
-        log_end(i, "client_readdir");
+        log_end(path, i, "client_readdir");
         if((long)entries == ERRCONNECTION){
             reconnect(i--);
             continue;
@@ -436,7 +450,7 @@ int client_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t of
         int count = offsets[0];
         offsets++;
         if(count < 0){
-            console.logger(STORAGE.diskname, STORAGE.servers[i].name, "couldn't read from server");
+            LOGGER("couldn't read from server");
             return -ENOMEM;
         }
         int j = 0; for(; j < count; j++){
@@ -460,12 +474,12 @@ int client_releasedir(const char *path, struct fuse_file_info *fi)
             if(!restoreall(&i))
                 continue;
         }
-        log_start(i, "client_releasedir");
+        log_start(path, i, "client_releasedir");
         intptr_t fd = get_server_fd(&STORAGE.servers[i], fi->fh);
         if(fd == -1)
             return EBADF;
         res = request->msg_status(create_message(fnc_releasedir, fd, 0, ""), STORAGE.servers[i].name);
-        log_end(i, "client_releasedir");
+        log_end(path, i, "client_releasedir");
         if(res == ERRCONNECTION){
             reconnect(i--);
         }
@@ -499,6 +513,7 @@ int main (int argc, char *argv[]) {
     Protocol p = new_protocol();
     request = &p->request;
     config_init(&config, argv[1], request);
+    cache = new_cache(config.cache_size, MB);
     int res = 0;
     int i = 0;for(; i < config.n_storages; i++){
         int pid = 0;

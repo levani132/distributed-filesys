@@ -23,24 +23,23 @@ int connector_open_server_on(const char * ip, int port){
 
 	int listen_sock;
 	if ((listen_sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-		console.log("could not create listen socket");
+		LOGGER_ERROR("could not create listen socket");
 		return 1;
 	}
 
 	if ((bind(listen_sock, (struct sockaddr *)&server_address,
 	          sizeof(server_address))) < 0) {
-		console.log("could not bind socket");
+		LOGGER_ERROR("could not bind socket");
 		return 1;
 	}
 
-    ;
-    if(fcntl (listen_sock, F_SETFL, fcntl (listen_sock, F_GETFL, 0) | O_NONBLOCK) < 0){
-        console.log("could not make socket nonblocking");
-    }
+    // if(fcntl (listen_sock, F_SETFL, fcntl (listen_sock, F_GETFL, 0) | O_NONBLOCK) < 0){
+    //     LOGGER_ERROR("could not make socket nonblocking");
+    // }
 
 	int wait_size = 16;
 	if (listen(listen_sock, wait_size) < 0) {
-		console.log("could not open socket for listening");
+		LOGGER_ERROR("could not open socket for listening");
 		return 1;
 	}
     return listen_sock;
@@ -87,11 +86,11 @@ struct message* connector_get_message(int sock){
 
 void* connector_get_data(int sock, int size){
     int n = 0;
-    char* message = malloc(size);
-    memset(message, 0, size);
+    void* data = malloc(size);
+    memset(data, 0, size);
 
-    if ((n = recv(sock, message, size, 0)) > 0) {
-        return message;
+    if ((n = recv(sock, data, size, 0)) > 0) {
+        return data;
     }else{
         return NULL;
     }
@@ -100,7 +99,7 @@ void* connector_get_data(int sock, int size){
 int connector_send_message(int sock, struct message* message){
     int n_sent;
     if((n_sent = send(sock, message, sizeof*message, 0)) != sizeof*message){
-        console.log("something went wrong when sending message");
+        LOGGER_ERROR("something went wrong when sending message");
         return -errno;
     }
     return n_sent;
@@ -115,7 +114,7 @@ int connector_send_data(int sock, void* data, int size){
     }
     free(message);
     if(size && (n_sent = send(sock, data, size, 0)) != size){
-        console.log("something went wrong when sending data");
+        LOGGER_ERROR("something went wrong when sending data");
         return -errno;
     }
     free(data);
@@ -241,7 +240,7 @@ long send_and_recv_status(struct message* message_to_send, const char * server){
 }
 
 long send_data_recv_status(struct message * to_send, const char* data, int size, const char* server){
-    return parse_status(send_data_recv_message(to_send, data, strlen(data) + 1, server));
+    return parse_status(send_data_recv_message(to_send, data, size, server));
 }
 
 long connector_ping(const char* server){

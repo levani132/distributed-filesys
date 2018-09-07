@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sys/types.h>
+#include <linux/limits.h>
 #include "fuse.h"
 
 #define ERRCONNECTION   -132
@@ -14,7 +15,7 @@ struct message {
     off_t offset;
     mode_t mode;
     dev_t dev;
-    char small_data[256];
+    char small_data[PATH_MAX];
 };
 
 struct getattr_ans {

@@ -36,7 +36,7 @@ void cleanup(UNUSED int sig){
 
 int handle_message(int sock, struct message* mr){
     int retval;
-    console.log("client is calling %s", function_name[mr->function_id]);
+    console.log("client is calling [%s]", function_name[mr->function_id]);
     switch(mr->function_id){
         case fnc_ping: retval = protocol->send_status(sock, 1); break;
         case fnc_opendir: retval = protocol->send_status(sock, file_manager->opendir(mr->small_data)); break;
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
     event.data.fd = listen_sock;
     event.events = EPOLLIN | EPOLLET; 
     if(epoll_ctl(epfd, EPOLL_CTL_ADD, listen_sock, &event) < 0){
-        console.log("adding listen_sock failed");
+        LOGGER_ERROR("adding listen_sock failed");
     }
     events = malloc(MAXEVENTS * sizeof*events);
 
@@ -112,22 +112,21 @@ int main(int argc, char* argv[]) {
             if(events[i].events & EPOLLERR || 
                 events[i].events & EPOLLHUP || 
                 !(events[i].events & EPOLLIN)){
-                console.log("error taking event from epoll");
+                LOGGER_ERROR("error taking event from epoll");
                 close(events[i].data.fd);
                 continue;
             }
             if(listen_sock == events[i].data.fd){
                 if ((sock = accept(listen_sock, (struct sockaddr *)&client_address, &client_address_len)) < 0) {
-                    console.log("could not open a socket to accept data");
-                    console.log("%s %d", strerror(errno), errno);
+                    LOGGER_ERROR("could not open a socket to accept data");
+                    LOGGER_ERROR("%s %d", strerror(errno), errno);
                     return 1;
                 }
                 console.log("client connected with ip address: %s", inet_ntoa(client_address.sin_addr));
-                fcntl (sock, F_SETFL, fcntl (sock, F_GETFL, 0) | O_NONBLOCK);
                 event.data.fd = sock;
                 event.events = EPOLLIN | EPOLLET;
                 if(epoll_ctl (epfd, EPOLL_CTL_ADD, sock, &event) < 0){
-                    console.log("adding sock failed");
+                    LOGGER_ERROR("adding sock failed");
                 }
             }
             else{
@@ -137,7 +136,7 @@ int main(int argc, char* argv[]) {
                 while ((message_received = protocol->get_message(sock))) {
                     int status = handle_message(sock, message_received);
                     if (status < 0) {
-                        console.log("%s %d", strerror(-status), -status);
+                        LOGGER_ERROR("%s %d", strerror(-status), -status);
                     }
                     free(message_received);
                 }

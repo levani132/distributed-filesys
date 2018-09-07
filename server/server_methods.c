@@ -98,12 +98,6 @@ struct getattr_ans* server_getattr(const char * path) {
     return ans;
 }
 
-char* server_read(int fd, size_t size, off_t offset){
-    char* buf = malloc((size + 1) * sizeof(char));
-    pread(fd, buf, size, offset);
-    return buf;
-}
-
 int server_truncate(char* path, off_t size){
     char fullpath[256];
     get_fullpath(fullpath, path);
@@ -179,6 +173,7 @@ int server_write(const char* path, int fd, void* data, size_t size, off_t offset
     int retval = 0;
     char fullpath[PATH_MAX];
     get_fullpath(fullpath, path);
+    console.log(data);
     if((retval = pwrite(fd, data, size, offset)) < 0){
         return -errno;
     }
@@ -187,6 +182,13 @@ int server_write(const char* path, int fd, void* data, size_t size, off_t offset
         return -errno;
     }
     return retval;
+}
+
+char* server_read(int fd, size_t size, off_t offset){
+    char* buf = malloc((size + 1) * sizeof(char));
+    pread(fd, buf, size, offset);
+    console.log(buf);
+    return buf;
 }
 
 int mkdir_recursive(char* fullpath){
@@ -309,7 +311,7 @@ int server_restoreall(const char* path, const char* server, int first){
     int count = offsets[0];
     offsets++;
     if(count < 0){
-        console.log("couldn't read dir from server %s", server);
+        LOGGER_ERROR("couldn't read dir from server %s", server);
         return -ENOMEM;
     }
     int j = 0; for(; j < count; j++){

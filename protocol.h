@@ -1,5 +1,10 @@
 #pragma once
 
+#include <fuse.h>
+
+#define STORAGE_NAME ((struct storage*)fuse_get_context()->private_data ? \
+                        ((struct storage*)fuse_get_context()->private_data)->diskname : NULL)
+
 typedef struct request {
     struct message* (*msg_msg)(struct message* message_to_send, const char* server);
     void* (*msg_data)(struct message* message_to_send, const char* server);

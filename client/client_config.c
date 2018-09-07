@@ -88,7 +88,7 @@ void config_init(struct config * config, char * filename, Request req){
     FILE* file = fopen(filename, "r");
     config->n_storages = n_storages(file);
     parse_config(config, file);
-    FILE* error_file = fopen(config->errorlog, "w");
+    FILE* error_file = fopen(config->errorlog, "a");
     assert(file != NULL);
     console.log("from now on %s will be used for logs (see next messages there)", config->errorlog);
     console.set_file(error_file);

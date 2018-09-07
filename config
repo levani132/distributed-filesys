@@ -7,4 +7,4 @@ diskname = STORAGE1
 mountpoint = test0
 raid = 1
 servers = 127.0.0.1:10001, 127.0.0.1:10002
-hotswap = 127.0.0.1:10003 
+hotswap = 127.0.0.1:10003

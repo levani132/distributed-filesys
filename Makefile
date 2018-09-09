@@ -2,6 +2,10 @@ all: build client server
 
 build:
 	mkdir build
+	mkdir test0
+	mkdir test1
+	mkdir test2
+	mkdir test3
 
 client: client/client.c
 	gcc -Wall logger.c message.c protocol.c client/client.c client/client_cache.c client/client_config.c `pkg-config fuse --cflags --libs` -o build/client -lpthread
@@ -11,3 +15,8 @@ server: server/server.c
 
 clean:
 	rm -fdr build
+	rm -fdr test0
+	rm -fdr test1
+	rm -fdr test2
+	rm -fdr test3
+	rm error.log

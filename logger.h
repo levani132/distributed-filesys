@@ -1,5 +1,5 @@
 #pragma once
-#include <bits/types/FILE.h>
+#include <stdio.h>
 
 void memswap(void * left, void * right, size_t size);
 
